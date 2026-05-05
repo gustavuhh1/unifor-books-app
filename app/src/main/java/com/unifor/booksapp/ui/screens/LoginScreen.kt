@@ -1,7 +1,6 @@
 package com.unifor.booksapp.ui.screens
 
 import android.content.res.Configuration
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -26,8 +25,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.unifor.booksapp.ui.theme.*
 
+/**
+ * Padrão de Engenharia: Unidirectional Data Flow (UDF).
+ * A LoginScreen agora expõe eventos via callbacks (onLoginSuccess), 
+ * permitindo que o orquestrador (NavHost) decida o próximo passo.
+ */
 @Composable
-fun LoginScreen() {
+fun LoginScreen(onLoginSuccess: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -79,7 +83,7 @@ fun LoginScreen() {
         
         Spacer(modifier = Modifier.height(32.dp))
         
-        LoginButton(onClick = { /* Handle login */ })
+        LoginButton(onClick = onLoginSuccess)
         
         Spacer(modifier = Modifier.height(24.dp))
         
@@ -270,7 +274,6 @@ fun SupportButton(icon: ImageVector, text: String, modifier: Modifier = Modifier
 
 
     TextButton(
-        // TODO: Handle de redirecionamento
         onClick = { /* Handle click */ },
         modifier = modifier
     ) {
@@ -297,14 +300,6 @@ fun CopyrightSection() {
 @Composable
 fun LoginPreviewLight() {
     UniforBooksAppTheme(darkTheme = false) {
-        LoginScreen()
-    }
-}
-
-@Preview(showBackground = true, name = "Dark Mode", uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-fun LoginPreviewDark() {
-    UniforBooksAppTheme(darkTheme = true) {
-        LoginScreen()
+        LoginScreen(onLoginSuccess = {})
     }
 }
