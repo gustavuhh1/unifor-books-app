@@ -7,7 +7,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
@@ -16,6 +15,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.unifor.booksapp.navigation.Screen
 import com.unifor.booksapp.ui.components.UniforBottomNavBar
+import com.unifor.booksapp.ui.screens.BookDetailScreen
+import com.unifor.booksapp.ui.screens.CatalogScreen
 import com.unifor.booksapp.ui.screens.HomeScreen
 import com.unifor.booksapp.ui.screens.LoginScreen
 import com.unifor.booksapp.ui.theme.UniforBooksAppTheme
@@ -64,7 +65,18 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.Home.route) {
                             HomeScreen()
                         }
-                        // Outras rotas serão adicionadas aqui (Catalog, Loans, Profile)
+                        composable(Screen.Catalog.route) {
+                            CatalogScreen(
+                                onBookClick = { bookId ->
+                                    navController.navigate(Screen.BookDetails.createRoute(bookId))
+                                },
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Screen.BookDetails.route) {
+                            BookDetailScreen(onBack = { navController.popBackStack() })
+                        }
+                        // Outras rotas serão adicionadas aqui (Loans, Profile)
                     }
                 }
             }

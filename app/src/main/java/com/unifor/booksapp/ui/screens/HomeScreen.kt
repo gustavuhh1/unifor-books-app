@@ -41,18 +41,20 @@ fun HomeScreen() {
                 CategoriesBentoGrid()
                 Spacer(modifier = Modifier.height(48.dp))
             }
-            
+
             TopRatedCarousel()
-            
+
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                 Spacer(modifier = Modifier.height(48.dp))
                 EventsMural()
                 Spacer(modifier = Modifier.height(48.dp))
                 DiscoverMoreSection()
                 Spacer(modifier = Modifier.height(48.dp))
-                NewReleasesCarousel()
-                Spacer(modifier = Modifier.height(120.dp)) // Espaço para BottomNav
             }
+
+            NewReleasesCarousel()
+
+            Spacer(modifier = Modifier.height(120.dp)) // Espaço para BottomNav
         }
     }
 }
@@ -141,7 +143,7 @@ fun CategoriesBentoGrid() {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     CategoryItem(categories[i].first, categories[i].second, Modifier.weight(1f))
                     if (i + 1 < categories.size) {
-                        CategoryItem(categories[i+1].first, categories[i+1].second, Modifier.weight(1f))
+                        CategoryItem(categories[i + 1].first, categories[i + 1].second, Modifier.weight(1f))
                     }
                 }
             }
@@ -173,7 +175,9 @@ fun CategoryItem(label: String, icon: ImageVector, modifier: Modifier = Modifier
 fun TopRatedCarousel() {
     Column {
         Row(
-            modifier = Modifier.padding(horizontal = 24.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -181,7 +185,10 @@ fun TopRatedCarousel() {
             Text("Ver todos", color = UniforPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
         }
         Spacer(modifier = Modifier.height(24.dp))
-        LazyRow(contentPadding = PaddingValues(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
             items(5) { BookCard() }
         }
     }
@@ -197,7 +204,9 @@ fun BookCard() {
                 .background(UniforSurfaceContainerHigh, RoundedCornerShape(20.dp))
         ) {
             Surface(
-                modifier = Modifier.padding(12.dp).align(Alignment.TopEnd),
+                modifier = Modifier
+                    .padding(12.dp)
+                    .align(Alignment.TopEnd),
                 color = UniforSecondaryContainer,
                 shape = RoundedCornerShape(6.dp)
             ) {
@@ -212,38 +221,67 @@ fun BookCard() {
         Text("Inteligência Artificial", fontWeight = FontWeight.Bold, fontSize = 15.sp)
         Text("Dr. Alan Turing", color = UniforOutline, fontSize = 13.sp)
         Row(modifier = Modifier.padding(top = 4.dp)) {
-            repeat(5) { Icon(Icons.Default.Star, contentDescription = null, tint = UniforTertiaryFixed, modifier = Modifier.size(16.dp)) }
+            repeat(5) {
+                Icon(Icons.Default.Star, contentDescription = null, tint = UniforTertiaryFixed, modifier = Modifier.size(16.dp))
+            }
         }
     }
 }
 
 @Composable
 fun EventsMural() {
+    // Dados dos eventos
+    data class EventData(
+        val badge: String,
+        val title: String,
+        val description: String,
+        val dateInfo: String
+    )
+
+    val events = listOf(
+        EventData(
+            badge = "PRÓXIMO WORKSHOP",
+            title = "Workshop de Pesquisa Digital",
+            description = "Aprenda a navegar em bases de dados internacionais de forma eficiente.",
+            dateInfo = "24 de Outubro, 18:00 • Biblioteca Central"
+        ),
+        EventData(
+            badge = "LANÇAMENTO",
+            title = "IA na Educação",
+            description = "Debate sobre o impacto da inteligência artificial no ensino superior.",
+            dateInfo = "10 de Novembro, 19:00 • Auditório A"
+        )
+    )
+
     Column {
         Text("Mural de Eventos", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = UniforPrimary)
         Spacer(modifier = Modifier.height(24.dp))
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = UniforPrimary,
-            shape = RoundedCornerShape(28.dp)
-        ) {
-            Column(modifier = Modifier.padding(32.dp)) {
-                Surface(color = UniforSecondary, shape = CircleShape) {
-                    Text(
-                        "PRÓXIMO WORKSHOP",
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                        color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("Workshop de Pesquisa Digital", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(12.dp))
-                Text("Aprenda a navegar em bases de dados internacionais de forma eficiente.", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(24.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text("24 de Outubro, 18:00 • Biblioteca Central", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            events.forEach { event ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = UniforPrimary,
+                    shape = RoundedCornerShape(28.dp)
+                ) {
+                    Column(modifier = Modifier.padding(32.dp)) {
+                        Surface(color = UniforSecondary, shape = CircleShape) {
+                            Text(
+                                event.badge,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(event.title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(event.description, color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(event.dateInfo, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
                 }
             }
         }
@@ -252,22 +290,35 @@ fun EventsMural() {
 
 @Composable
 fun DiscoverMoreSection() {
+    data class DiscoverItem(val title: String, val subtitle: String)
+
+    val items = listOf(
+        DiscoverItem("Marketing Estratégico", "Recomendado com base no seu histórico"),
+        DiscoverItem("Academia Romana 2.0", "Tendência na sua área de estudo")
+    )
+
     Column {
         Text("Descubra Mais", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = UniforPrimary)
         Spacer(modifier = Modifier.height(24.dp))
-        repeat(2) {
+        items.forEach { item ->
             Surface(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
                 color = Color(0xFFF3F4F5),
                 shape = RoundedCornerShape(20.dp),
                 onClick = { }
             ) {
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(60.dp, 80.dp).background(UniforOutline.copy(alpha = 0.2f), RoundedCornerShape(8.dp)))
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp, 80.dp)
+                            .background(UniforOutline.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                    )
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text("Marketing Estratégico", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                        Text("Recomendado com base no seu histórico", fontSize = 12.sp, color = UniforOutline)
+                        Text(item.title, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        Text(item.subtitle, fontSize = 12.sp, color = UniforOutline)
                     }
                 }
             }
@@ -278,12 +329,26 @@ fun DiscoverMoreSection() {
 @Composable
 fun NewReleasesCarousel() {
     Column {
-        Text("Novidades", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = UniforPrimary)
+        Text(
+            "Novidades",
+            fontWeight = FontWeight.Bold,
+            fontSize = 20.sp,
+            color = UniforPrimary,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
         Spacer(modifier = Modifier.height(24.dp))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             items(5) {
                 Column(modifier = Modifier.width(140.dp)) {
-                    Box(modifier = Modifier.fillMaxWidth().aspectRatio(0.75f).background(UniforSurfaceContainerHigh, RoundedCornerShape(12.dp)))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(0.75f)
+                            .background(UniforSurfaceContainerHigh, RoundedCornerShape(12.dp))
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("RECÉM CHEGADO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = UniforSecondary)
                     Text("Data Science Pro", fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)

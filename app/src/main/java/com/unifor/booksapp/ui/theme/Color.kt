@@ -13,6 +13,9 @@ val UniforSurfaceContainerHigh = Color(0xFFE7E8E9)
 val UniforSecondaryContainer = Color(0xFF8AFAA7)
 val UniforOnSecondaryContainer = Color(0xFF007439)
 val UniforTertiaryFixed = Color(0xFFFEBB2B)
+val UniforTertiaryContainer = Color(0xFF654600)
+val UniforSurfaceContainerLow = Color(0xFFF3F4F5)
+val UniforSurfaceContainerLowest = Color(0xFFFFFFFF)
 
 // Legado / Compatibilidade
 val UniforBlue = Color(0xFF004C99)

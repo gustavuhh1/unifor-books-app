@@ -6,7 +6,7 @@ Transcrição **literal** dos títulos das issues entregues.
 | Issue | Título | Perfil |
 |-------|--------|--------|
 | #5  | Tela Empréstimos Aluno                         | Aluno |
-| #6  | Pagina do Livro                                | Aluno |
+| #6  | ~~Pagina do Livro~~  ✅ **CONCLUÍDO**           | Aluno |
 | #7  | Tela de Livro Adm                              | Admin |
 | #8  | Tela de Comentarios                            | Aluno |
 | #9  | Tela de monitorar Acervo (adm)                 | Admin |
@@ -26,5 +26,6 @@ Transcrição **literal** dos títulos das issues entregues.
 - **Login** — `LoginScreen.kt` (visual completo)
 - **Home** — `HomeScreen.kt` (visual completo, com mocks)
 - **BottomNavBar** — `BottomNavBar.kt` (componente reutilizável)
+- **Página do Livro** (#6) — `BookDetailScreen.kt` (visual completo, com mocks) ✅
 
 Não há issues abertas para Login/Home/BottomNav, pois já estão em código.
