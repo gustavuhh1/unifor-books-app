@@ -65,8 +65,6 @@ fun HomeScreen(
 
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                 Spacer(modifier = Modifier.height(48.dp))
-                EventsMural()
-                Spacer(modifier = Modifier.height(48.dp))
                 DiscoverMoreSection()
                 Spacer(modifier = Modifier.height(48.dp))
                 NewReleasesCarousel()
@@ -166,7 +164,6 @@ private fun DevShortcutsMenu(
     }
 }
 
-// ... (restante do arquivo HomeScreen.kt não modificado)
 @Composable
 fun WelcomeHeader() {
     Column {
@@ -297,111 +294,6 @@ fun BookCard() {
         Text("Dr. Alan Turing", color = UniforOutline, fontSize = 13.sp)
         Row(modifier = Modifier.padding(top = 4.dp)) {
             repeat(5) { Icon(Icons.Default.Star, contentDescription = null, tint = UniforTertiaryFixed, modifier = Modifier.size(16.dp)) }
-        }
-    }
-}
-
-enum class EventType(
-    val containerColor: Color,
-    val onContainerColor: Color,
-    val badgeColor: Color,
-    val onBadgeColor: Color,
-    val secondaryTextColor: Color,
-    val badgeText: String
-) {
-    WORKSHOP(
-        containerColor = UniforPrimary,
-        onContainerColor = Color.White,
-        badgeColor = UniforSecondary,
-        onBadgeColor = Color.White,
-        secondaryTextColor = Color.White.copy(alpha = 0.75f),
-        badgeText = "PRÓXIMO WORKSHOP"
-    ),
-    LANCAMENTO(
-        containerColor = Color(0xFFFFE7A1),
-        onContainerColor = UniforPrimary,
-        badgeColor = UniforTertiaryFixed,
-        onBadgeColor = Color(0xFF3F2E00),
-        secondaryTextColor = UniforPrimary.copy(alpha = 0.7f),
-        badgeText = "LANÇAMENTO"
-    )
-}
-
-data class MuralEvent(
-    val id: String,
-    val type: EventType,
-    val title: String,
-    val description: String,
-    val dateInfo: String
-)
-
-@Composable
-fun EventsMural() {
-    val events = listOf(
-        MuralEvent("1", EventType.WORKSHOP, "Workshop de Pesquisa Digital", "Aprenda a navegar em bases de dados internacionais de forma eficiente.", "24 de Outubro, 18:00 • Biblioteca Central"),
-        MuralEvent("2", EventType.LANCAMENTO, "Lançamento: IA na Educação", "Uma discussão profunda sobre o futuro do ensino com especialistas convidados.", "30 de Outubro • Auditório A")
-    )
-
-    Column {
-        Text("Mural de Eventos", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = UniforPrimary)
-        Spacer(modifier = Modifier.height(24.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            events.forEach { event ->
-                EventCard(event = event)
-            }
-        }
-    }
-}
-
-@Composable
-private fun EventCard(event: MuralEvent) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = event.type.containerColor,
-        shape = RoundedCornerShape(28.dp)
-    ) {
-        Column(modifier = Modifier.padding(28.dp)) {
-            Surface(color = event.type.badgeColor, shape = CircleShape) {
-                Text(
-                    event.type.badgeText,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                    color = event.type.onBadgeColor,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 0.5.sp
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                event.title,
-                color = event.type.onContainerColor,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 32.sp
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                event.description,
-                color = event.type.secondaryTextColor,
-                fontSize = 14.sp,
-                lineHeight = 20.sp
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.CalendarToday,
-                    contentDescription = null,
-                    tint = event.type.onContainerColor,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    event.dateInfo,
-                    color = event.type.onContainerColor,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
-            }
         }
     }
 }
