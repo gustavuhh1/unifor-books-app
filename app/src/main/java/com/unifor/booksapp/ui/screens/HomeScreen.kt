@@ -41,9 +41,9 @@ fun HomeScreen() {
                 CategoriesBentoGrid()
                 Spacer(modifier = Modifier.height(48.dp))
             }
-            
+
             TopRatedCarousel()
-            
+
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                 Spacer(modifier = Modifier.height(48.dp))
                 EventsMural()
@@ -141,7 +141,7 @@ fun CategoriesBentoGrid() {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     CategoryItem(categories[i].first, categories[i].second, Modifier.weight(1f))
                     if (i + 1 < categories.size) {
-                        CategoryItem(categories[i+1].first, categories[i+1].second, Modifier.weight(1f))
+                        CategoryItem(categories[i + 1].first, categories[i + 1].second, Modifier.weight(1f))
                     }
                 }
             }
@@ -173,7 +173,9 @@ fun CategoryItem(label: String, icon: ImageVector, modifier: Modifier = Modifier
 fun TopRatedCarousel() {
     Column {
         Row(
-            modifier = Modifier.padding(horizontal = 24.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -197,7 +199,9 @@ fun BookCard() {
                 .background(UniforSurfaceContainerHigh, RoundedCornerShape(20.dp))
         ) {
             Surface(
-                modifier = Modifier.padding(12.dp).align(Alignment.TopEnd),
+                modifier = Modifier
+                    .padding(12.dp)
+                    .align(Alignment.TopEnd),
                 color = UniforSecondaryContainer,
                 shape = RoundedCornerShape(6.dp)
             ) {
@@ -217,38 +221,135 @@ fun BookCard() {
     }
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Mural de Eventos
+// ──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Tipo de evento exibido no Mural.
+ *
+ * Cada tipo carrega sua própria paleta visual conforme o protótipo:
+ *  - WORKSHOP   → fundo azul escuro, texto branco
+ *  - LANCAMENTO → fundo amarelo claro, texto azul escuro
+ */
+enum class EventType(
+    val containerColor: Color,
+    val onContainerColor: Color,
+    val badgeColor: Color,
+    val onBadgeColor: Color,
+    val secondaryTextColor: Color,
+    val badgeText: String
+) {
+    WORKSHOP(
+        containerColor = UniforPrimary,
+        onContainerColor = Color.White,
+        badgeColor = UniforSecondary,
+        onBadgeColor = Color.White,
+        secondaryTextColor = Color.White.copy(alpha = 0.75f),
+        badgeText = "PRÓXIMO WORKSHOP"
+    ),
+    LANCAMENTO(
+        containerColor = Color(0xFFFFE7A1),       // amarelo claro (tertiary container)
+        onContainerColor = UniforPrimary,
+        badgeColor = UniforTertiaryFixed,         // amarelo Unifor
+        onBadgeColor = Color(0xFF3F2E00),
+        secondaryTextColor = UniforPrimary.copy(alpha = 0.7f),
+        badgeText = "LANÇAMENTO"
+    )
+}
+
+/**
+ * Modelo de evento exibido no Mural.
+ *
+ * Será preenchido pelo banco de dados. Por ora, a lista virá vazia.
+ */
+data class MuralEvent(
+    val id: String,
+    val type: EventType,
+    val title: String,
+    val description: String,
+    val dateInfo: String
+)
+
 @Composable
-fun EventsMural() {
+fun EventsMural(
+    events: List<MuralEvent> = emptyList()
+) {
     Column {
         Text("Mural de Eventos", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = UniforPrimary)
         Spacer(modifier = Modifier.height(24.dp))
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = UniforPrimary,
-            shape = RoundedCornerShape(28.dp)
-        ) {
-            Column(modifier = Modifier.padding(32.dp)) {
-                Surface(color = UniforSecondary, shape = CircleShape) {
-                    Text(
-                        "PRÓXIMO WORKSHOP",
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                        color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("Workshop de Pesquisa Digital", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(12.dp))
-                Text("Aprenda a navegar em bases de dados internacionais de forma eficiente.", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(24.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text("24 de Outubro, 18:00 • Biblioteca Central", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                }
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            events.forEach { event ->
+                EventCard(event = event)
             }
         }
     }
 }
+
+@Composable
+private fun EventCard(event: MuralEvent) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = event.type.containerColor,
+        shape = RoundedCornerShape(28.dp)
+    ) {
+        Column(modifier = Modifier.padding(28.dp)) {
+            // Badge
+            Surface(color = event.type.badgeColor, shape = CircleShape) {
+                Text(
+                    event.type.badgeText,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    color = event.type.onBadgeColor,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Título
+            Text(
+                event.title,
+                color = event.type.onContainerColor,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 32.sp
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Descrição
+            Text(
+                event.description,
+                color = event.type.secondaryTextColor,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Linha de data
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.CalendarToday,
+                    contentDescription = null,
+                    tint = event.type.onContainerColor,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    event.dateInfo,
+                    color = event.type.onContainerColor,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
+        }
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 
 @Composable
 fun DiscoverMoreSection() {
@@ -257,7 +358,9 @@ fun DiscoverMoreSection() {
         Spacer(modifier = Modifier.height(24.dp))
         repeat(2) {
             Surface(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
                 color = Color(0xFFF3F4F5),
                 shape = RoundedCornerShape(20.dp),
                 onClick = { }
