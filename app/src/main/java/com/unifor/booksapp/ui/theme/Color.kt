@@ -17,6 +17,16 @@ val UniforTertiaryContainer = Color(0xFF654600)
 val UniforSurfaceContainerLow = Color(0xFFF3F4F5)
 val UniforSurfaceContainerLowest = Color(0xFFFFFFFF)
 
+// Status colors
+val UniforSuccess = Color(0xFF006D35)
+val UniforSuccessContainer = Color(0xFFD6F5E3)
+val UniforError = Color(0xFFBA1A1A)
+val UniforErrorContainer = Color(0xFFFFDAD6)
+val UniforWarning = Color(0xFFF59E0B)
+val UniforWarningContainer = Color(0xFFFFF3CD)
+val UniforWarningOnContainer = Color(0xFF7A4F00)
+val UniforInfoContainer = Color(0xFFE8F0FE)
+
 // Legado / Compatibilidade
 val UniforBlue = Color(0xFF004C99)
 val UniforDarkBlue = Color(0xFF00346F)

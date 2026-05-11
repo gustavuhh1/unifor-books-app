@@ -1,4 +1,4 @@
-# Requisitos Funcionais — Perfil ALUNO
+ude# Requisitos Funcionais — Perfil ALUNO
 
 > Transcrição literal da planilha de requisitos. Códigos preservados como na fonte.
 > ⚠️ A planilha original possui **códigos duplicados** intencionalmente (dois `RF04`, dois `RF02` etc.). Mantemos a duplicação e adicionamos um sufixo entre parênteses para desambiguar internamente, **sem alterar o código oficial**.

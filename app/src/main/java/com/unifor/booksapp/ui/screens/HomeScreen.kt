@@ -3,7 +3,6 @@ package com.unifor.booksapp.ui.screens
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -18,12 +17,35 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.unifor.booksapp.BuildConfig
 import com.unifor.booksapp.ui.theme.*
 
+/**
+ * Tela principal.
+ *
+ * Recebe callbacks de navegação que são consumidos pelos atalhos de
+ * desenvolvedor (visíveis apenas em builds de DEBUG).
+ */
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    onNavigateToCatalog: () -> Unit = {},
+    onNavigateToBookDetails: () -> Unit = {},
+    onNavigateToLoanApproved: () -> Unit = {},
+    onNavigateToLoanUnavailable: () -> Unit = {},
+    onNavigateToLoanQueue: () -> Unit = {},
+    onNavigateToLogin: () -> Unit = {}
+) {
     Scaffold(
-        topBar = { HomeTopBar() },
+        topBar = {
+            HomeTopBar(
+                onNavigateToCatalog = onNavigateToCatalog,
+                onNavigateToBookDetails = onNavigateToBookDetails,
+                onNavigateToLoanApproved = onNavigateToLoanApproved,
+                onNavigateToLoanUnavailable = onNavigateToLoanUnavailable,
+                onNavigateToLoanQueue = onNavigateToLoanQueue,
+                onNavigateToLogin = onNavigateToLogin
+            )
+        },
         containerColor = UniforBackground
     ) { paddingValues ->
         Column(
@@ -61,7 +83,14 @@ fun HomeScreen() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeTopBar() {
+fun HomeTopBar(
+    onNavigateToCatalog: () -> Unit = {},
+    onNavigateToBookDetails: () -> Unit = {},
+    onNavigateToLoanApproved: () -> Unit = {},
+    onNavigateToLoanUnavailable: () -> Unit = {},
+    onNavigateToLoanQueue: () -> Unit = {},
+    onNavigateToLogin: () -> Unit = {}
+) {
     TopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -74,6 +103,19 @@ fun HomeTopBar() {
             IconButton(onClick = { }) {
                 Icon(Icons.Default.Notifications, contentDescription = null, tint = UniforOutline)
             }
+
+            // Atalhos de desenvolvimento (apenas em DEBUG)
+            if (BuildConfig.DEBUG) {
+                DevShortcutsMenu(
+                    onNavigateToCatalog = onNavigateToCatalog,
+                    onNavigateToBookDetails = onNavigateToBookDetails,
+                    onNavigateToLoanApproved = onNavigateToLoanApproved,
+                    onNavigateToLoanUnavailable = onNavigateToLoanUnavailable,
+                    onNavigateToLoanQueue = onNavigateToLoanQueue,
+                    onNavigateToLogin = onNavigateToLogin
+                )
+            }
+
             Box(
                 modifier = Modifier
                     .padding(end = 16.dp)
@@ -86,6 +128,122 @@ fun HomeTopBar() {
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = UniforBackground.copy(alpha = 0.8f))
+    )
+}
+
+/**
+ * Menu de atalhos para desenvolvedores.
+ *
+ * Permite navegar diretamente para qualquer tela do app, útil enquanto o
+ * banco de dados não está alimentado. Visível apenas em builds DEBUG.
+ */
+@Composable
+private fun DevShortcutsMenu(
+    onNavigateToCatalog: () -> Unit,
+    onNavigateToBookDetails: () -> Unit,
+    onNavigateToLoanApproved: () -> Unit,
+    onNavigateToLoanUnavailable: () -> Unit,
+    onNavigateToLoanQueue: () -> Unit,
+    onNavigateToLogin: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                Icons.Default.DeveloperMode,
+                contentDescription = "Atalhos de desenvolvimento",
+                tint = UniforPrimary
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            // Cabeçalho
+            Text(
+                "ATALHOS DEV",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Black,
+                color = UniforOutline,
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            HorizontalDivider()
+
+            DevMenuItem(
+                label = "Catálogo",
+                icon = Icons.Default.ImportContacts,
+                onClick = {
+                    expanded = false
+                    onNavigateToCatalog()
+                }
+            )
+            DevMenuItem(
+                label = "Detalhes do Livro",
+                icon = Icons.Default.MenuBook,
+                onClick = {
+                    expanded = false
+                    onNavigateToBookDetails()
+                }
+            )
+
+            HorizontalDivider()
+
+            DevMenuItem(
+                label = "Empréstimo Aprovado",
+                icon = Icons.Default.CheckCircle,
+                onClick = {
+                    expanded = false
+                    onNavigateToLoanApproved()
+                }
+            )
+            DevMenuItem(
+                label = "Livro Indisponível",
+                icon = Icons.Default.Block,
+                onClick = {
+                    expanded = false
+                    onNavigateToLoanUnavailable()
+                }
+            )
+            DevMenuItem(
+                label = "Você está na Fila",
+                icon = Icons.Default.People,
+                onClick = {
+                    expanded = false
+                    onNavigateToLoanQueue()
+                }
+            )
+
+            HorizontalDivider()
+
+            DevMenuItem(
+                label = "Voltar ao Login",
+                icon = Icons.Default.Logout,
+                onClick = {
+                    expanded = false
+                    onNavigateToLogin()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun DevMenuItem(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    DropdownMenuItem(
+        text = {
+            Text(label, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        },
+        leadingIcon = {
+            Icon(icon, contentDescription = null, tint = UniforPrimary)
+        },
+        onClick = onClick
     )
 }
 
@@ -130,14 +288,8 @@ fun CategoriesBentoGrid() {
     Column {
         Text("Categorias de Estudo", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = UniforPrimary)
         Spacer(modifier = Modifier.height(24.dp))
-        val categories = listOf(
-            "Computação" to Icons.Default.Computer,
-            "Arquitetura" to Icons.Default.Architecture,
-            "Direito" to Icons.Default.Gavel,
-            "Medicina" to Icons.Default.MedicalServices,
-            "Economia" to Icons.Default.AccountBalance,
-            "Psicologia" to Icons.Default.Psychology
-        )
+        // Categorias virão do banco. Placeholder de grade vazia.
+        val categories = emptyList<Pair<String, ImageVector>>()
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             for (i in categories.indices step 2) {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -185,11 +337,12 @@ fun TopRatedCarousel() {
             Text("Ver todos", color = UniforPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
         }
         Spacer(modifier = Modifier.height(24.dp))
+        // Lista de livros mais bem avaliados virá do banco.
         LazyRow(
             contentPadding = PaddingValues(horizontal = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            items(5) { BookCard() }
+            // items virão do banco
         }
     }
 }
@@ -211,15 +364,15 @@ fun BookCard() {
                 shape = RoundedCornerShape(6.dp)
             ) {
                 Text(
-                    "DISPONÍVEL",
+                    "",
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     fontSize = 10.sp, fontWeight = FontWeight.Black, color = UniforOnSecondaryContainer
                 )
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Inteligência Artificial", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-        Text("Dr. Alan Turing", color = UniforOutline, fontSize = 13.sp)
+        Text("", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        Text("", color = UniforOutline, fontSize = 13.sp)
         Row(modifier = Modifier.padding(top = 4.dp)) {
             repeat(5) {
                 Icon(Icons.Default.Star, contentDescription = null, tint = UniforTertiaryFixed, modifier = Modifier.size(16.dp))
@@ -230,34 +383,14 @@ fun BookCard() {
 
 @Composable
 fun EventsMural() {
-    // Dados dos eventos
-    data class EventData(
-        val badge: String,
-        val title: String,
-        val description: String,
-        val dateInfo: String
-    )
-
-    val events = listOf(
-        EventData(
-            badge = "PRÓXIMO WORKSHOP",
-            title = "Workshop de Pesquisa Digital",
-            description = "Aprenda a navegar em bases de dados internacionais de forma eficiente.",
-            dateInfo = "24 de Outubro, 18:00 • Biblioteca Central"
-        ),
-        EventData(
-            badge = "LANÇAMENTO",
-            title = "IA na Educação",
-            description = "Debate sobre o impacto da inteligência artificial no ensino superior.",
-            dateInfo = "10 de Novembro, 19:00 • Auditório A"
-        )
-    )
+    // Eventos da biblioteca virão do banco. Lista vazia por enquanto.
+    val events = emptyList<Unit>()
 
     Column {
         Text("Mural de Eventos", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = UniforPrimary)
         Spacer(modifier = Modifier.height(24.dp))
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            events.forEach { event ->
+            events.forEach { _ ->
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = UniforPrimary,
@@ -266,20 +399,20 @@ fun EventsMural() {
                     Column(modifier = Modifier.padding(32.dp)) {
                         Surface(color = UniforSecondary, shape = CircleShape) {
                             Text(
-                                event.badge,
+                                "",
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                                 color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black
                             )
                         }
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text(event.title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                        Text("", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text(event.description, color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
+                        Text("", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
                         Spacer(modifier = Modifier.height(24.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text(event.dateInfo, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
                 }
@@ -290,17 +423,13 @@ fun EventsMural() {
 
 @Composable
 fun DiscoverMoreSection() {
-    data class DiscoverItem(val title: String, val subtitle: String)
-
-    val items = listOf(
-        DiscoverItem("Marketing Estratégico", "Recomendado com base no seu histórico"),
-        DiscoverItem("Academia Romana 2.0", "Tendência na sua área de estudo")
-    )
+    // Sugestões virão do banco. Lista vazia por enquanto.
+    val items = emptyList<Unit>()
 
     Column {
         Text("Descubra Mais", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = UniforPrimary)
         Spacer(modifier = Modifier.height(24.dp))
-        items.forEach { item ->
+        items.forEach { _ ->
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -317,8 +446,8 @@ fun DiscoverMoreSection() {
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text(item.title, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                        Text(item.subtitle, fontSize = 12.sp, color = UniforOutline)
+                        Text("", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        Text("", fontSize = 12.sp, color = UniforOutline)
                     }
                 }
             }
@@ -337,23 +466,12 @@ fun NewReleasesCarousel() {
             modifier = Modifier.padding(horizontal = 24.dp)
         )
         Spacer(modifier = Modifier.height(24.dp))
+        // Lançamentos virão do banco.
         LazyRow(
             contentPadding = PaddingValues(horizontal = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(5) {
-                Column(modifier = Modifier.width(140.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(0.75f)
-                            .background(UniforSurfaceContainerHigh, RoundedCornerShape(12.dp))
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("RECÉM CHEGADO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = UniforSecondary)
-                    Text("Data Science Pro", fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
-                }
-            }
+            // items virão do banco
         }
     }
 }

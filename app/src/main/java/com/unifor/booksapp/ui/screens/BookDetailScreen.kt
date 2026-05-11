@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.unifor.booksapp.ui.theme.*
 
-// --- Mock data ---
+// --- Modelo local de comentário ---
 
 private data class BookComment(
     val authorName: String,
@@ -38,28 +38,8 @@ private data class BookComment(
     val isLiked: Boolean
 )
 
-private val mockComments = listOf(
-    BookComment(
-        authorName = "Beatriz Menezes",
-        authorRole = "Estudante de Engenharia",
-        timeAgo = "Ontem",
-        rating = 5,
-        text = "Leitura obrigatória para quem quer entender o futuro das bibliotecas digitais. " +
-                "A linguagem é técnica mas muito acessível. Recomendo fortemente para os alunos do primeiro semestre.",
-        likes = 24,
-        isLiked = true
-    ),
-    BookComment(
-        authorName = "Prof. Marcos André",
-        authorRole = "Docente",
-        timeAgo = "Há 3 dias",
-        rating = 4,
-        text = "O capítulo sobre ontologias é o ponto alto. Embora o livro tenha sido escrito há dois anos, " +
-                "os conceitos permanecem extremamente atuais dentro do nosso campus.",
-        likes = 12,
-        isLiked = false
-    )
-)
+// Comentários virão do banco de dados.
+private val mockComments: List<BookComment> = emptyList()
 
 // --- Screen ---
 
@@ -151,37 +131,22 @@ private fun BookHeroSection() {
                 .fillMaxWidth()
                 .height(260.dp)
                 .clip(RoundedCornerShape(20.dp))
-                .background(Color(0xFF1A1A2E)),
+                .background(UniforSurfaceContainerHigh),
             contentAlignment = Alignment.Center
         ) {
-            // Badge DISPONÍVEL no canto superior esquerdo
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
-                Surface(
-                    modifier = Modifier.padding(12.dp),
-                    color = UniforSecondaryContainer,
-                    shape = RoundedCornerShape(50.dp)
-                ) {
-                    Text(
-                        "DISPONÍVEL",
-                        color = UniforSecondary,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 11.sp,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
-            }
             Icon(
                 Icons.AutoMirrored.Filled.MenuBook,
                 contentDescription = null,
-                tint = Color.White.copy(alpha = 0.25f),
+                tint = UniforOutline.copy(alpha = 0.4f),
                 modifier = Modifier.size(80.dp)
             )
         }
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // Título e autor virão do banco
         Text(
-            "A Arquitetura da Informação Contemporânea",
+            "",
             fontSize = 28.sp,
             fontWeight = FontWeight.Black,
             color = UniforPrimary,
@@ -189,7 +154,7 @@ private fun BookHeroSection() {
         )
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            "Dr. Ricardo Vasconcelos",
+            "",
             fontSize = 16.sp,
             color = UniforOutline,
             fontWeight = FontWeight.Medium
@@ -230,8 +195,9 @@ private fun RatingQuickLookRow() {
                     )
                 }
                 Spacer(modifier = Modifier.height(2.dp))
+                // Nota média virá do banco
                 Text(
-                    "4.5 / 5.0",
+                    "",
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
                     color = UniforOnSurface
@@ -248,7 +214,8 @@ private fun RatingQuickLookRow() {
                     color = UniforOutline,
                     letterSpacing = 0.5.sp
                 )
-                Text("128", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = UniforPrimary)
+                // Total de avaliações virá do banco
+                Text("", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = UniforPrimary)
             }
 
             MetricDivider()
@@ -261,7 +228,8 @@ private fun RatingQuickLookRow() {
                     color = UniforOutline,
                     letterSpacing = 0.5.sp
                 )
-                Text("432", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = UniforPrimary)
+                // Total de páginas virá do banco
+                Text("", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = UniforPrimary)
             }
         }
     }
@@ -288,11 +256,9 @@ private fun BookDescriptionSection() {
             color = UniforOnSurface
         )
         Spacer(modifier = Modifier.height(12.dp))
+        // Descrição virá do banco
         Text(
-            "Uma exploração profunda sobre como os sistemas digitais moldam nossa percepção da " +
-                    "realidade acadêmica. Este volume premiado pela UNIFOR Press oferece uma visão crítica " +
-                    "sobre as estruturas de dados no contexto bibliográfico moderno, servindo como guia " +
-                    "essencial para estudantes de Design e Ciência da Computação.",
+            "",
             fontSize = 15.sp,
             color = UniforOutline,
             lineHeight = 22.sp
@@ -351,15 +317,16 @@ private fun ReadingAnalysisSection() {
                         verticalAlignment = Alignment.Bottom
                     ) {
                         Column {
+                            // Média e total de leitores virão do banco
                             Text(
-                                "4.5",
+                                "",
                                 fontSize = 56.sp,
                                 fontWeight = FontWeight.Black,
                                 color = UniforPrimary,
                                 lineHeight = 60.sp
                             )
                             Text(
-                                "Média baseada em 128 leitores",
+                                "",
                                 fontSize = 12.sp,
                                 color = UniforOutline
                             )
@@ -374,12 +341,8 @@ private fun ReadingAnalysisSection() {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    val ratingBars = listOf(
-                        Triple(5, 0.75f, UniforSecondary),
-                        Triple(4, 0.15f, UniforSecondary),
-                        Triple(3, 0.08f, UniforTertiaryFixed),
-                        Triple(2, 0.02f, Color(0xFFFFB3AC))
-                    )
+                    // Distribuição de notas virá do banco. Sem barras por enquanto.
+                    val ratingBars = emptyList<Triple<Int, Float, Color>>()
                     ratingBars.forEach { (star, progress, color) ->
                         RatingBar(star = star, progress = progress, barColor = color)
                         Spacer(modifier = Modifier.height(8.dp))
@@ -416,8 +379,9 @@ private fun ReadingAnalysisSection() {
                             lineHeight = 20.sp
                         )
                         Spacer(modifier = Modifier.height(8.dp))
+                        // Citação virá do banco
                         Text(
-                            "\"Essencial para o currículo de Arquitetura de Dados da UNIFOR.\"",
+                            "",
                             fontSize = 12.sp,
                             color = Color(0xFFF3B01F).copy(alpha = 0.85f),
                             lineHeight = 16.sp
@@ -660,7 +624,7 @@ private fun ViewMoreButton() {
             colors = ButtonDefaults.outlinedButtonColors(contentColor = UniforPrimary)
         ) {
             Text(
-                "Ver mais 126 comentários",
+                "Ver mais comentários",
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)

@@ -2,9 +2,9 @@ package com.unifor.booksapp.ui.components
 
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.ImportContacts
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -20,7 +20,7 @@ import com.unifor.booksapp.ui.theme.UniforOutline
 sealed class NavItem(val route: String, val icon: ImageVector, val label: String) {
     object Home : NavItem("home", Icons.Default.Home, "Início")
     object Catalog : NavItem("catalog", Icons.Default.ImportContacts, "Catálogo")
-    object Loans : NavItem("loans", Icons.Default.MenuBook, "Empréstimos")
+    object Loans : NavItem("loans", Icons.AutoMirrored.Filled.MenuBook, "Empréstimos")
     object Profile : NavItem("profile", Icons.Default.Person, "Perfil")
 }
 

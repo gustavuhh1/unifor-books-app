@@ -9,16 +9,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.unifor.booksapp.navigation.Screen
 import com.unifor.booksapp.ui.components.UniforBottomNavBar
-import com.unifor.booksapp.ui.screens.BookDetailScreen
-import com.unifor.booksapp.ui.screens.CatalogScreen
-import com.unifor.booksapp.ui.screens.HomeScreen
-import com.unifor.booksapp.ui.screens.LoginScreen
+import com.unifor.booksapp.ui.screens.*
 import com.unifor.booksapp.ui.theme.UniforBooksAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -31,8 +30,15 @@ class MainActivity : ComponentActivity() {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
 
-                // Só mostramos a NavBar se não estivermos na tela de Login
-                val showBottomBar = currentRoute != Screen.Login.route
+                // Rotas que não devem exibir a BottomNav
+                val hideBottomBarRoutes = setOf(
+                    Screen.Login.route,
+                    Screen.LoanApproved.route,
+                    Screen.LoanUnavailable.route,
+                    Screen.LoanQueue.route   // rota-template sem parâmetro
+                )
+                val showBottomBar = currentRoute != null &&
+                        hideBottomBarRoutes.none { currentRoute.startsWith(it.substringBefore("{")) }
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
@@ -55,6 +61,7 @@ class MainActivity : ComponentActivity() {
                         startDestination = Screen.Login.route,
                         modifier = Modifier.padding(innerPadding)
                     ) {
+                        // ── Auth ──────────────────────────────────────────
                         composable(Screen.Login.route) {
                             LoginScreen(onLoginSuccess = {
                                 navController.navigate(Screen.Home.route) {
@@ -62,9 +69,34 @@ class MainActivity : ComponentActivity() {
                                 }
                             })
                         }
+
+                        // ── Main ─────────────────────────────────────────
                         composable(Screen.Home.route) {
-                            HomeScreen()
+                            HomeScreen(
+                                onNavigateToCatalog = {
+                                    navController.navigate(Screen.Catalog.route)
+                                },
+                                onNavigateToBookDetails = {
+                                    // Usa um id-dummy enquanto o BD não fornece livros reais
+                                    navController.navigate(Screen.BookDetails.createRoute("dev"))
+                                },
+                                onNavigateToLoanApproved = {
+                                    navController.navigate(Screen.LoanApproved.route)
+                                },
+                                onNavigateToLoanUnavailable = {
+                                    navController.navigate(Screen.LoanUnavailable.route)
+                                },
+                                onNavigateToLoanQueue = {
+                                    navController.navigate(Screen.LoanQueue.createRoute(3))
+                                },
+                                onNavigateToLogin = {
+                                    navController.navigate(Screen.Login.route) {
+                                        popUpTo(0) { inclusive = true }
+                                    }
+                                }
+                            )
                         }
+
                         composable(Screen.Catalog.route) {
                             CatalogScreen(
                                 onBookClick = { bookId ->
@@ -73,9 +105,55 @@ class MainActivity : ComponentActivity() {
                                 onBack = { navController.popBackStack() }
                             )
                         }
+
                         composable(Screen.BookDetails.route) {
                             BookDetailScreen(onBack = { navController.popBackStack() })
                         }
+
+                        // ── Loan status ───────────────────────────────────
+                        composable(Screen.LoanApproved.route) {
+                            LoanApprovedScreen(
+                                onViewLoans = {
+                                    navController.navigate("loans") {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+
+                        composable(Screen.LoanUnavailable.route) {
+                            LoanUnavailableScreen(
+                                onBack = { navController.popBackStack() },
+                                onViewDigitalCollection = {
+                                    navController.navigate(Screen.Catalog.route) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                onJoinQueue = {
+                                    navController.navigate(Screen.LoanQueue.createRoute(3)) {
+                                        popUpTo(Screen.LoanUnavailable.route) { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+
+                        composable(
+                            route = Screen.LoanQueue.route,
+                            arguments = listOf(navArgument("position") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val position = backStackEntry.arguments?.getInt("position") ?: 1
+                            LoanQueueScreen(
+                                queuePosition = position,
+                                onViewLoans = {
+                                    navController.navigate("loans") {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+
                         // Outras rotas serão adicionadas aqui (Loans, Profile)
                     }
                 }

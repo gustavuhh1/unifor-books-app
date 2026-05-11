@@ -43,16 +43,8 @@ private data class CatalogBook(
     val coverColor: Color
 )
 
-private val sampleBooks = listOf(
-    CatalogBook("1", "A Arquitetura da Informação", "Dr. Ricardo Vasconcelos", 4.5f, true, Color(0xFF1A1A2E)),
-    CatalogBook("2", "Design Sustentável", "Johnathan Rosa", 4.0f, false, Color(0xFFE8E8E8)),
-    CatalogBook("3", "Direito Constitucional", "Gilmar Mendes", 5.0f, true, Color(0xFF1B4332)),
-    CatalogBook("4", "Código Limpo", "Robert C. Martin", 4.5f, true, Color(0xFF00346F)),
-    CatalogBook("5", "Engenharia de Software", "Ian Sommerville", 4.2f, true, Color(0xFF2D1B69)),
-    CatalogBook("6", "Cálculo Vol. 1", "James Stewart", 3.8f, false, Color(0xFF7B2D00)),
-    CatalogBook("7", "Marketing Digital", "Philip Kotler", 4.7f, true, Color(0xFF004D40)),
-    CatalogBook("8", "Psicologia Geral", "David Myers", 4.1f, true, Color(0xFF4A148C)),
-)
+// Lista vazia: será preenchida pelo banco de dados.
+private val sampleBooks: List<CatalogBook> = emptyList()
 
 // ─── Tela principal ──────────────────────────────────────────────────────────
 
@@ -111,11 +103,7 @@ fun CatalogScreen(
             // ── Grade de livros ───────────────────────────────────────────
             if (filteredBooks.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        "Nenhum livro encontrado.",
-                        color = UniforOutline,
-                        fontSize = 16.sp
-                    )
+                    // Sem texto: aguardando dados do banco.
                 }
             } else {
                 LazyVerticalGrid(
