@@ -36,7 +36,10 @@ class MainActivity : ComponentActivity() {
                     Screen.LoanUnavailable.route,
                     Screen.LoanQueue.route,
                     Screen.ReportComment.route,
-                    Screen.ReportConfirmation.route
+                    Screen.ReportConfirmation.route,
+                    Screen.FinesPolicy.route,
+                    Screen.RenewalAvailable.route,
+                    Screen.RenewalUnavailable.route
                 )
                 val showBottomBar = currentRoute != null &&
                         hideBottomBarRoutes.none { currentRoute.startsWith(it.substringBefore("{")) }
@@ -62,11 +65,14 @@ class MainActivity : ComponentActivity() {
                         startDestination = Screen.Login.route,
                         modifier = Modifier.padding(innerPadding)
                     ) {
+                        // Auth
                         composable(Screen.Login.route) {
                             LoginScreen(onLoginSuccess = {
                                 navController.navigate(Screen.Home.route) { popUpTo(Screen.Login.route) { inclusive = true } }
                             })
                         }
+
+                        // Main Screens
                         composable(Screen.Home.route) {
                             HomeScreen(
                                 onNavigateToCatalog = { navController.navigate(Screen.Catalog.route) },
@@ -89,43 +95,52 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(Screen.BookDetails.route) {
-                            BookDetailScreen(onBack = { navController.popBackStack() })
+                            BookDetailScreen(
+                                onBack = { navController.popBackStack() },
+                                onReportComment = { commentId -> navController.navigate(Screen.ReportComment.createRoute(commentId)) }
+                            )
                         }
-                        composable(Screen.LoanApproved.route) {
-                            LoanApprovedScreen(onViewLoans = {}, onBack = { navController.popBackStack() })
+
+                        // My Loans Flow
+                        composable(Screen.MyLoans.route) {
+                            MyLoansScreen(
+                                onNavigateToFines = { navController.navigate(Screen.FinesPolicy.route) },
+                                onNavigateToRenewal = { isAvailable ->
+                                    if (isAvailable) navController.navigate(Screen.RenewalAvailable.route)
+                                    else navController.navigate(Screen.RenewalUnavailable.route)
+                                },
+                                onBack = { navController.popBackStack() }
+                            )
                         }
-                        composable(Screen.LoanUnavailable.route) {
-                            LoanUnavailableScreen(onBack = { navController.popBackStack() })
+                        composable(Screen.FinesPolicy.route) { FinesPolicyScreen(onBack = { navController.popBackStack() }) }
+                        composable(Screen.RenewalAvailable.route) {
+                            RenewalAvailableScreen(onBack = { navController.popBackStack() }, onGoToCollection = {}, newDueDate = null)
                         }
+                        composable(Screen.RenewalUnavailable.route) {
+                            RenewalUnavailableScreen(onBack = { navController.popBackStack() }, onGoToCollection = {})
+                        }
+
+                        // Loan Status
+                        composable(Screen.LoanApproved.route) { LoanApprovedScreen(onViewLoans = {}, onBack = { navController.popBackStack() }) }
+                        composable(Screen.LoanUnavailable.route) { LoanUnavailableScreen(onBack = { navController.popBackStack() }) }
                         composable(
                             route = Screen.LoanQueue.route,
                             arguments = listOf(navArgument("position") { type = NavType.IntType })
                         ) {
-                            LoanQueueScreen(
-                                queuePosition = it.arguments?.getInt("position"),
-                                onBack = { navController.popBackStack() }
-                            )
+                            LoanQueueScreen(queuePosition = it.arguments?.getInt("position"), onBack = { navController.popBackStack() })
                         }
+
+                        // Report Flow
                         composable(Screen.ReportComment.route) {
                             ReportCommentScreen(
-                                onSendReport = {
-                                    navController.navigate(Screen.ReportConfirmation.route) {
-                                        popUpTo(Screen.ReportComment.route) { inclusive = true }
-                                    }
-                                },
+                                onSendReport = { navController.navigate(Screen.ReportConfirmation.route) { popUpTo(Screen.ReportComment.route) { inclusive = true } } },
                                 onBack = { navController.popBackStack() }
                             )
                         }
                         composable(Screen.ReportConfirmation.route) {
                             ReportConfirmationScreen(
-                                onBackToBook = {
-                                    navController.popBackStack(Screen.BookDetails.route.substringBefore("{"), inclusive = false)
-                                },
-                                onGoToHome = {
-                                    navController.navigate(Screen.Home.route) {
-                                        popUpTo(0)
-                                    }
-                                },
+                                onBackToBook = { navController.popBackStack(Screen.BookDetails.route.substringBefore("{"), false) },
+                                onGoToHome = { navController.navigate(Screen.Home.route) { popUpTo(0) } },
                                 onBack = { navController.popBackStack() }
                             )
                         }

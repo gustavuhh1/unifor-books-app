@@ -20,4 +20,10 @@ sealed class Screen(val route: String) {
         fun createRoute(commentId: String) = "report/$commentId"
     }
     object ReportConfirmation : Screen("report/confirmation")
+
+    // Telas de Meus Empréstimos
+    object MyLoans : Screen("loans")
+    object FinesPolicy : Screen("fines")
+    object RenewalAvailable : Screen("renewal/available")
+    object RenewalUnavailable : Screen("renewal/unavailable")
 }
