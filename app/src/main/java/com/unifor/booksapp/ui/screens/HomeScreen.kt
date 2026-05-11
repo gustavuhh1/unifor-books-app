@@ -18,12 +18,31 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.unifor.booksapp.BuildConfig
 import com.unifor.booksapp.ui.theme.*
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    onNavigateToCatalog: () -> Unit = {},
+    onNavigateToBookDetails: () -> Unit = {},
+    onNavigateToLoanApproved: () -> Unit = {},
+    onNavigateToLoanUnavailable: () -> Unit = {},
+    onNavigateToLoanQueue: () -> Unit = {},
+    onNavigateToReportComment: () -> Unit = {},
+    onNavigateToLogin: () -> Unit = {}
+) {
     Scaffold(
-        topBar = { HomeTopBar() },
+        topBar = {
+            HomeTopBar(
+                onNavigateToCatalog = onNavigateToCatalog,
+                onNavigateToBookDetails = onNavigateToBookDetails,
+                onNavigateToLoanApproved = onNavigateToLoanApproved,
+                onNavigateToLoanUnavailable = onNavigateToLoanUnavailable,
+                onNavigateToLoanQueue = onNavigateToLoanQueue,
+                onNavigateToReportComment = onNavigateToReportComment,
+                onNavigateToLogin = onNavigateToLogin
+            )
+        },
         containerColor = UniforBackground
     ) { paddingValues ->
         Column(
@@ -51,7 +70,7 @@ fun HomeScreen() {
                 DiscoverMoreSection()
                 Spacer(modifier = Modifier.height(48.dp))
                 NewReleasesCarousel()
-                Spacer(modifier = Modifier.height(120.dp)) // Espaço para BottomNav
+                Spacer(modifier = Modifier.height(120.dp))
             }
         }
     }
@@ -59,7 +78,15 @@ fun HomeScreen() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeTopBar() {
+fun HomeTopBar(
+    onNavigateToCatalog: () -> Unit,
+    onNavigateToBookDetails: () -> Unit,
+    onNavigateToLoanApproved: () -> Unit,
+    onNavigateToLoanUnavailable: () -> Unit,
+    onNavigateToLoanQueue: () -> Unit,
+    onNavigateToReportComment: () -> Unit,
+    onNavigateToLogin: () -> Unit
+) {
     TopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -72,6 +99,19 @@ fun HomeTopBar() {
             IconButton(onClick = { }) {
                 Icon(Icons.Default.Notifications, contentDescription = null, tint = UniforOutline)
             }
+
+            if (BuildConfig.DEBUG) {
+                DevShortcutsMenu(
+                    onNavigateToCatalog,
+                    onNavigateToBookDetails,
+                    onNavigateToLoanApproved,
+                    onNavigateToLoanUnavailable,
+                    onNavigateToLoanQueue,
+                    onNavigateToReportComment,
+                    onNavigateToLogin
+                )
+            }
+
             Box(
                 modifier = Modifier
                     .padding(end = 16.dp)
@@ -87,6 +127,46 @@ fun HomeTopBar() {
     )
 }
 
+@Composable
+private fun DevShortcutsMenu(
+    onNavigateToCatalog: () -> Unit,
+    onNavigateToBookDetails: () -> Unit,
+    onNavigateToLoanApproved: () -> Unit,
+    onNavigateToLoanUnavailable: () -> Unit,
+    onNavigateToLoanQueue: () -> Unit,
+    onNavigateToReportComment: () -> Unit,
+    onNavigateToLogin: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                Icons.Default.DeveloperMode,
+                contentDescription = "Atalhos de desenvolvimento",
+                tint = UniforPrimary
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            DropdownMenuItem(text = { Text("Catálogo") }, onClick = { expanded = false; onNavigateToCatalog() })
+            DropdownMenuItem(text = { Text("Detalhes do Livro") }, onClick = { expanded = false; onNavigateToBookDetails() })
+            HorizontalDivider()
+            DropdownMenuItem(text = { Text("Empréstimo Aprovado") }, onClick = { expanded = false; onNavigateToLoanApproved() })
+            DropdownMenuItem(text = { Text("Livro Indisponível") }, onClick = { expanded = false; onNavigateToLoanUnavailable() })
+            DropdownMenuItem(text = { Text("Você está na Fila") }, onClick = { expanded = false; onNavigateToLoanQueue() })
+            HorizontalDivider()
+            DropdownMenuItem(text = { Text("Denunciar Comentário") }, onClick = { expanded = false; onNavigateToReportComment() })
+            HorizontalDivider()
+            DropdownMenuItem(text = { Text("Voltar ao Login") }, onClick = { expanded = false; onNavigateToLogin() })
+        }
+    }
+}
+
+// ... (restante do arquivo HomeScreen.kt não modificado)
 @Composable
 fun WelcomeHeader() {
     Column {
@@ -221,17 +301,6 @@ fun BookCard() {
     }
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Mural de Eventos
-// ──────────────────────────────────────────────────────────────────────────────
-
-/**
- * Tipo de evento exibido no Mural.
- *
- * Cada tipo carrega sua própria paleta visual conforme o protótipo:
- *  - WORKSHOP   → fundo azul escuro, texto branco
- *  - LANCAMENTO → fundo amarelo claro, texto azul escuro
- */
 enum class EventType(
     val containerColor: Color,
     val onContainerColor: Color,
@@ -249,20 +318,15 @@ enum class EventType(
         badgeText = "PRÓXIMO WORKSHOP"
     ),
     LANCAMENTO(
-        containerColor = Color(0xFFFFE7A1),       // amarelo claro (tertiary container)
+        containerColor = Color(0xFFFFE7A1),
         onContainerColor = UniforPrimary,
-        badgeColor = UniforTertiaryFixed,         // amarelo Unifor
+        badgeColor = UniforTertiaryFixed,
         onBadgeColor = Color(0xFF3F2E00),
         secondaryTextColor = UniforPrimary.copy(alpha = 0.7f),
         badgeText = "LANÇAMENTO"
     )
 }
 
-/**
- * Modelo de evento exibido no Mural.
- *
- * Será preenchido pelo banco de dados. Por ora, a lista virá vazia.
- */
 data class MuralEvent(
     val id: String,
     val type: EventType,
@@ -272,9 +336,12 @@ data class MuralEvent(
 )
 
 @Composable
-fun EventsMural(
-    events: List<MuralEvent> = emptyList()
-) {
+fun EventsMural() {
+    val events = listOf(
+        MuralEvent("1", EventType.WORKSHOP, "Workshop de Pesquisa Digital", "Aprenda a navegar em bases de dados internacionais de forma eficiente.", "24 de Outubro, 18:00 • Biblioteca Central"),
+        MuralEvent("2", EventType.LANCAMENTO, "Lançamento: IA na Educação", "Uma discussão profunda sobre o futuro do ensino com especialistas convidados.", "30 de Outubro • Auditório A")
+    )
+
     Column {
         Text("Mural de Eventos", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = UniforPrimary)
         Spacer(modifier = Modifier.height(24.dp))
@@ -294,7 +361,6 @@ private fun EventCard(event: MuralEvent) {
         shape = RoundedCornerShape(28.dp)
     ) {
         Column(modifier = Modifier.padding(28.dp)) {
-            // Badge
             Surface(color = event.type.badgeColor, shape = CircleShape) {
                 Text(
                     event.type.badgeText,
@@ -305,10 +371,7 @@ private fun EventCard(event: MuralEvent) {
                     letterSpacing = 0.5.sp
                 )
             }
-
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Título
             Text(
                 event.title,
                 color = event.type.onContainerColor,
@@ -316,20 +379,14 @@ private fun EventCard(event: MuralEvent) {
                 fontWeight = FontWeight.Bold,
                 lineHeight = 32.sp
             )
-
             Spacer(modifier = Modifier.height(12.dp))
-
-            // Descrição
             Text(
                 event.description,
                 color = event.type.secondaryTextColor,
                 fontSize = 14.sp,
                 lineHeight = 20.sp
             )
-
             Spacer(modifier = Modifier.height(24.dp))
-
-            // Linha de data
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.CalendarToday,
@@ -348,8 +405,6 @@ private fun EventCard(event: MuralEvent) {
         }
     }
 }
-
-// ──────────────────────────────────────────────────────────────────────────────
 
 @Composable
 fun DiscoverMoreSection() {
