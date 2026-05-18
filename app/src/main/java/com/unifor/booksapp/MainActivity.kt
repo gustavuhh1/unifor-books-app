@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.unifor.booksapp.ui.screens.AuthViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,6 +21,7 @@ import androidx.navigation.navArgument
 import com.unifor.booksapp.navigation.Screen
 import com.unifor.booksapp.ui.components.UniforBottomNavBar
 import com.unifor.booksapp.ui.screens.*
+import com.unifor.booksapp.ui.screens.auth.LoginScreen
 import com.unifor.booksapp.ui.theme.UniforBooksAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -67,9 +71,25 @@ class MainActivity : ComponentActivity() {
                     ) {
                         // Auth
                         composable(Screen.Login.route) {
-                            LoginScreen(onLoginSuccess = {
-                                navController.navigate(Screen.Home.route) { popUpTo(Screen.Login.route) { inclusive = true } }
-                            })
+                            // 1. Pega o contexto atual
+                            val context = LocalContext.current
+
+                            // 2. Acessa o nosso container dentro da Application
+                            val appContainer = (context.applicationContext as BooksApplication).container
+
+                            // 3. Pede para o Compose criar o AuthViewModel e ensina ele como criá-lo (Factory)
+                            val viewModel: AuthViewModel = viewModel(
+                                factory = AuthViewModel.provideFactory(appContainer.authRepository)
+                            )
+
+                            LoginScreen(
+                                viewModel = viewModel, // Passamos o ViewModel pra tela
+                                onLoginSuccess = {
+                                    navController.navigate(Screen.Home.route) {
+                                        popUpTo(Screen.Login.route) { inclusive = true }
+                                    }
+                                }
+                            )
                         }
 
                         // Main Screens

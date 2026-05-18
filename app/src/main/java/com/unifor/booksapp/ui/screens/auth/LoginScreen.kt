@@ -1,6 +1,5 @@
-package com.unifor.booksapp.ui.screens
+package com.unifor.booksapp.ui.screens.auth
 
-import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -23,15 +22,39 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.unifor.booksapp.ui.screens.AuthState
+import com.unifor.booksapp.ui.screens.AuthViewModel
 import com.unifor.booksapp.ui.theme.*
 
-/**
- * Padrão de Engenharia: Unidirectional Data Flow (UDF).
- * A LoginScreen agora expõe eventos via callbacks (onLoginSuccess), 
- * permitindo que o orquestrador (NavHost) decida o próximo passo.
- */
 @Composable
-fun LoginScreen(onLoginSuccess: () -> Unit) {
+fun LoginScreen(
+    viewModel: AuthViewModel,
+    onLoginSuccess: () -> Unit
+) {
+    val authState by viewModel.authState.collectAsState()
+
+    LaunchedEffect(authState) {
+        if (authState is AuthState.Success) {
+            onLoginSuccess()
+        }
+    }
+
+    // Chama o componente burro passando as variáveis
+    LoginContent(
+        isLoading = authState is AuthState.Loading,
+        errorMessage = if (authState is AuthState.Error) (authState as AuthState.Error).message else null,
+        onLoginClick = { matricula, senha ->
+            viewModel.login(matricula, senha)
+        }
+    )
+}
+
+@Composable
+fun LoginContent(
+    isLoading: Boolean,
+    errorMessage: String?,
+    onLoginClick: (String, String) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -80,10 +103,24 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
         
         RememberMeComponent(checked = rememberMe, onCheckedChange = { rememberMe = it })
+
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
         
         Spacer(modifier = Modifier.height(32.dp))
-        
-        LoginButton(onClick = onLoginSuccess)
+
+        LoginButton(
+            isLoading = isLoading,
+            onClick = { onLoginClick(matricula, senha) }
+        )
         
         Spacer(modifier = Modifier.height(24.dp))
         
@@ -226,19 +263,31 @@ fun RememberMeComponent(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
 }
 
 @Composable
-fun LoginButton(onClick: () -> Unit) {
+fun LoginButton(
+    isLoading: Boolean,
+    onClick: () -> Unit
+) {
     Button(
         onClick = onClick,
+        enabled = !isLoading,
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = UniforDarkBlue),
+        colors = ButtonDefaults.buttonColors(containerColor = UniforDarkBlue, disabledContainerColor = UniforBlue),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "Entrar", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.White)
+        if (isLoading) {
+            CircularProgressIndicator(
+                color = Color.White,
+                modifier = Modifier.size(24.dp),
+                strokeWidth = 2.5.dp
+            )
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "Entrar", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.White)
+            }
         }
     }
 }
@@ -300,6 +349,45 @@ fun CopyrightSection() {
 @Composable
 fun LoginPreviewLight() {
     UniforBooksAppTheme(darkTheme = false) {
-        LoginScreen(onLoginSuccess = {})
+        LoginContent(
+            isLoading = false,
+            errorMessage = "Matrícula ou senha incorretos",
+            onLoginClick = { _, _ -> }
+        )
+    }
+}
+@Preview(showBackground = true, name = "Light Mode - Parado")
+@Composable
+fun LoginPreviewIdle() {
+    UniforBooksAppTheme(darkTheme = false) {
+        LoginContent(
+            isLoading = false,
+            errorMessage = null,
+            onLoginClick = { _, _ -> }
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Light Mode - Carregando")
+@Composable
+fun LoginPreviewLoading() {
+    UniforBooksAppTheme(darkTheme = false) {
+        LoginContent(
+            isLoading = true,
+            errorMessage = null,
+            onLoginClick = { _, _ -> }
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Light Mode - Erro")
+@Composable
+fun LoginPreviewError() {
+    UniforBooksAppTheme(darkTheme = false) {
+        LoginContent(
+            isLoading = false,
+            errorMessage = "Matrícula ou senha incorretos",
+            onLoginClick = { _, _ -> }
+        )
     }
 }
