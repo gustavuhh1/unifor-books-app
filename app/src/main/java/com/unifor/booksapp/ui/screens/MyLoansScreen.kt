@@ -1,6 +1,7 @@
 package com.unifor.booksapp.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -42,13 +43,14 @@ fun MyLoansScreen(
     onNavigateToFines: () -> Unit,
     onNavigateToRenewal: (Boolean) -> Unit,
     onBack: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     loans: List<LoanedBook> = emptyList(),
     onTimeCount: Int? = null,
     lateCount: Int? = null,
     queueCount: Int? = null
 ) {
     Scaffold(
-        topBar = { MyLoansTopBar(onBack = onBack) },
+        topBar = { MyLoansTopBar(onBack = onBack, onNavigateToProfile = onNavigateToProfile) },
         containerColor = UniforBackground
     ) { padding ->
         Column(
@@ -77,12 +79,20 @@ fun MyLoansScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MyLoansTopBar(onBack: () -> Unit) {
+private fun MyLoansTopBar(onBack: () -> Unit, onNavigateToProfile: () -> Unit) {
     TopAppBar(
         title = { Text("Unifor Books", fontWeight = FontWeight.Black, color = UniforPrimary) },
         navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar", tint = UniforPrimary) } },
         actions = {
-            Box(Modifier.padding(end = 16.dp).size(40.dp).clip(CircleShape).background(UniforSurfaceContainerHigh), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier
+                    .padding(end = 16.dp)
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(UniforSurfaceContainerHigh)
+                    .clickable { onNavigateToProfile() },
+                contentAlignment = Alignment.Center
+            ) {
                 Icon(Icons.Default.Person, null, tint = UniforPrimary)
             }
         },

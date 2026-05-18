@@ -7,6 +7,7 @@ sealed class Screen(val route: String) {
     object BookDetails : Screen("details/{bookId}") {
         fun createRoute(bookId: String) = "details/$bookId"
     }
+    object Profile : Screen("profile")
 
     // Telas de status de empréstimo
     object LoanApproved : Screen("loan/approved")
@@ -22,7 +23,7 @@ sealed class Screen(val route: String) {
     object ReportConfirmation : Screen("report/confirmation")
 
     // Telas de Meus Empréstimos
-    object MyLoans : Screen("loans")
+    object MyLoans : Screen("myloans")
     object FinesPolicy : Screen("fines")
     object RenewalAvailable : Screen("renewal/available")
     object RenewalUnavailable : Screen("renewal/unavailable")

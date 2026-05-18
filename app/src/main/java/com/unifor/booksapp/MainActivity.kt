@@ -39,7 +39,8 @@ class MainActivity : ComponentActivity() {
                     Screen.ReportConfirmation.route,
                     Screen.FinesPolicy.route,
                     Screen.RenewalAvailable.route,
-                    Screen.RenewalUnavailable.route
+                    Screen.RenewalUnavailable.route,
+                    Screen.Profile.route
                 )
                 val showBottomBar = currentRoute != null &&
                         hideBottomBarRoutes.none { currentRoute.startsWith(it.substringBefore("{")) }
@@ -91,13 +92,25 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.Catalog.route) {
                             CatalogScreen(
                                 onBookClick = { bookId -> navController.navigate(Screen.BookDetails.createRoute(bookId)) },
-                                onBack = { navController.popBackStack() }
+                                onBack = { navController.popBackStack() },
+                                onNavigateToProfile = { navController.navigate(Screen.Profile.route) }
                             )
                         }
                         composable(Screen.BookDetails.route) {
                             BookDetailScreen(
                                 onBack = { navController.popBackStack() },
-                                onReportComment = { commentId -> navController.navigate(Screen.ReportComment.createRoute(commentId)) }
+                                onReportComment = { commentId -> navController.navigate(Screen.ReportComment.createRoute(commentId)) },
+                                onNavigateToProfile = { navController.navigate(Screen.Profile.route) }
+                            )
+                        }
+                        composable(Screen.Profile.route) {
+                            ProfileScreen(
+                                onBack = { navController.popBackStack() },
+                                onLogout = {
+                                    navController.navigate(Screen.Login.route) {
+                                        popUpTo(0) { inclusive = true }
+                                    }
+                                }
                             )
                         }
 
@@ -109,7 +122,8 @@ class MainActivity : ComponentActivity() {
                                     if (isAvailable) navController.navigate(Screen.RenewalAvailable.route)
                                     else navController.navigate(Screen.RenewalUnavailable.route)
                                 },
-                                onBack = { navController.popBackStack() }
+                                onBack = { navController.popBackStack() },
+                                onNavigateToProfile = { navController.navigate(Screen.Profile.route) }
                             )
                         }
                         composable(Screen.FinesPolicy.route) { FinesPolicyScreen(onBack = { navController.popBackStack() }) }

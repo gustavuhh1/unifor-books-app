@@ -14,14 +14,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.unifor.booksapp.navigation.Screen
 import com.unifor.booksapp.ui.theme.UniforPrimary
 import com.unifor.booksapp.ui.theme.UniforOutline
 
 sealed class NavItem(val route: String, val icon: ImageVector, val label: String) {
-    object Home : NavItem("home", Icons.Default.Home, "Início")
-    object Catalog : NavItem("catalog", Icons.Default.ImportContacts, "Catálogo")
-    object Loans : NavItem("loans", Icons.Default.MenuBook, "Empréstimos")
-    object Profile : NavItem("profile", Icons.Default.Person, "Perfil")
+    object Home : NavItem(Screen.Home.route, Icons.Default.Home, "Início")
+    object Catalog : NavItem(Screen.Catalog.route, Icons.Default.ImportContacts, "Catálogo")
+    object Loans : NavItem(Screen.MyLoans.route, Icons.Default.MenuBook, "Empréstimos")
+    object Profile : NavItem(Screen.Profile.route, Icons.Default.Person, "Perfil")
 }
 
 @Composable

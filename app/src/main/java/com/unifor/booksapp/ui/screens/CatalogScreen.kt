@@ -1,6 +1,7 @@
 package com.unifor.booksapp.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -41,23 +42,41 @@ private data class CatalogBook(
     val coverColor: Color
 )
 
-private val sampleBooks: List<CatalogBook> = emptyList()
+private val sampleBooks: List<CatalogBook> = listOf(
+    CatalogBook("1", "O Guia do Mochileiro das Galáxias", "Douglas Adams", 4.5f, true, Color(0xFFF39C12)),
+    CatalogBook("2", "Neuromancer", "William Gibson", 4.8f, false, Color(0xFF9B59B6)),
+    CatalogBook("3", "Duna", "Frank Herbert", 4.9f, true, Color(0xFFE67E22)),
+    CatalogBook("4", "Fundação", "Isaac Asimov", 4.7f, true, Color(0xFF3498DB))
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CatalogScreen(
     onBookClick: (String) -> Unit = {},
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onNavigateToProfile: () -> Unit
 ) {
     var query by remember { mutableStateOf("") }
     var activeFilter by remember { mutableStateOf(CatalogFilter.ALL) }
 
     val filteredBooks = remember(query, activeFilter) {
-        sampleBooks
+        sampleBooks.filter { book ->
+            val queryMatch = query.isBlank() ||
+                    book.title.contains(query, ignoreCase = true) ||
+                    book.author.contains(query, ignoreCase = true)
+
+            val filterMatch = when (activeFilter) {
+                CatalogFilter.ALL -> true
+                CatalogFilter.TOP_RATED -> book.rating >= 4.5f
+                CatalogFilter.AVAILABLE -> book.available
+            }
+
+            queryMatch && filterMatch
+        }
     }
 
     Scaffold(
-        topBar = { CatalogTopBar(onBack = onBack) },
+        topBar = { CatalogTopBar(onBack = onBack, onNavigateToProfile = onNavigateToProfile) },
         containerColor = UniforBackground
     ) { paddingValues ->
         Column(
@@ -101,7 +120,7 @@ fun CatalogScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CatalogTopBar(onBack: () -> Unit) {
+private fun CatalogTopBar(onBack: () -> Unit, onNavigateToProfile: () -> Unit) {
     TopAppBar(
         navigationIcon = {
             IconButton(onClick = onBack) {
@@ -111,7 +130,12 @@ private fun CatalogTopBar(onBack: () -> Unit) {
         title = { Text("Unifor Books", fontWeight = FontWeight.Black, fontSize = 20.sp, color = UniforPrimary) },
         actions = {
             Box(
-                modifier = Modifier.padding(end = 16.dp).size(40.dp).clip(CircleShape).background(UniforSurfaceContainerHigh),
+                modifier = Modifier
+                    .padding(end = 16.dp)
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(UniforSurfaceContainerHigh)
+                    .clickable { onNavigateToProfile() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.Person, null, tint = UniforPrimary)
@@ -144,7 +168,7 @@ private fun CatalogSearchBar(query: String, onQueryChange: (String) -> Unit, mod
 @Composable
 private fun CatalogFilterChips(activeFilter: CatalogFilter, onFilterChange: (CatalogFilter) -> Unit, modifier: Modifier = Modifier) {
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        CatalogFilter.entries.forEach { filter ->
+        CatalogFilter.values().forEach { filter ->
             val selected = activeFilter == filter
             FilterChip(
                 selected = selected,
