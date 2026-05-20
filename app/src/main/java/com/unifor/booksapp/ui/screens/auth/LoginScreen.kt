@@ -35,11 +35,12 @@ fun LoginScreen(
 
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {
+            println("Logou")
             onLoginSuccess()
         }
     }
 
-    // Chama o componente burro passando as variáveis
+    // Chama o componente "burro" passando as variáveis
     LoginContent(
         isLoading = authState is AuthState.Loading,
         errorMessage = if (authState is AuthState.Error) (authState as AuthState.Error).message else null,

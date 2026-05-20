@@ -8,6 +8,6 @@ data class LoginResponse(val accessToken: String, val refreshToken: String)
 
 interface AuthService {
     // Endpoint do Fastify para login
-    @POST("/login")
+    @POST("/auth/login")
     suspend fun login(@Body request: LoginRequest): LoginResponse
 }

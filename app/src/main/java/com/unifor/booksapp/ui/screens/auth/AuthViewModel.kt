@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-// 1. Representa os estados possíveis da tela de login
+// 1Representa os estados da requisição "Login" (autenticação)
 sealed class AuthState {
-    object Idle : AuthState()                   // Estado inicial (parado)
+    object Empty : AuthState()                   // Estado inicial (vazio)
     object Loading : AuthState()                // Enquanto a requisição acontece
     object Success : AuthState()                // Login deu certo
     data class Error(val message: String) : AuthState() // Deu erro (senha errada, sem internet)
@@ -18,12 +18,10 @@ sealed class AuthState {
 
 class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
-    // 2. Variável que guarda o estado atual (privada para modificação)
-    private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
-    // Variável pública apenas para leitura (A tela vai observar essa)
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Empty)
     val authState: StateFlow<AuthState> = _authState
 
-    // 3. Função que o botão "Entrar" vai chamar
+    // Função principal LOGIN
     fun login(matricula: String, senha: String) {
         // Validação básica
         if (matricula.isBlank() || senha.isBlank()) {
@@ -37,17 +35,17 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
         // Inicia a requisição assíncrona
         viewModelScope.launch {
             try {
+                // Chama repository
                 authRepository.login(matricula, senha)
-                // Se não deu erro, atualiza para Sucesso!
+                // Sucesso, caso sem error
                 _authState.value = AuthState.Success
             } catch (e: Exception) {
-                // Se der erro (API fora, senha incorreta 401, etc)
-                _authState.value = AuthState.Error("Erro ao fazer login. Verifique seus dados.")
+                _authState.value = AuthState.Error("Erro: ${e.message}")
             }
         }
     }
 
-    // 4. A Factory que criamos para a MainActivity saber como instanciar
+    // A Factory que criamos para a MainActivity saber como instanciar
     companion object {
         fun provideFactory(authRepository: AuthRepository): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
