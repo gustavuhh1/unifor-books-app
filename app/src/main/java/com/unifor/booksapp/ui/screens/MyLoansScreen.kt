@@ -257,22 +257,39 @@ private fun StatusItem(count: Int, label: String, color: Color) {
 @Composable
 private fun FinesCard(onClick: () -> Unit) {
     Surface(onClick = onClick, shape = RoundedCornerShape(20.dp), color = UniforPrimary) {
-        Row(
-            Modifier
+        Column(
+            modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(20.dp)
         ) {
-            Icon(Icons.Default.Info, null, tint = Color.White)
-            Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(1f)) {
-                Text("Dúvidas sobre multas?", color = Color.White, fontWeight = FontWeight.Bold)
-            }
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "Dúvidas sobre multas?",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            )
+            Spacer(Modifier.height(16.dp))
             Button(
                 onClick = onClick,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f))
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White.copy(alpha = 0.2f),
+                    contentColor = Color.White
+                )
             ) {
-                Text("Saiba mais", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "Saiba mais sobre multas",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
             }
         }
     }

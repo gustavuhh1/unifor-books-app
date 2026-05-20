@@ -21,19 +21,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.unifor.booksapp.R
 import com.unifor.booksapp.data.models.Book
 import com.unifor.booksapp.ui.theme.*
+import com.unifor.booksapp.ui.viewmodels.CatalogFilter
 import com.unifor.booksapp.ui.viewmodels.CatalogUiState
 import com.unifor.booksapp.ui.viewmodels.CatalogViewModel
 
@@ -47,8 +42,7 @@ fun CatalogScreen(
 ) {
     val uiState by catalogViewModel.uiState.collectAsState()
     val query by catalogViewModel.query.collectAsState()
-    val onlyAvailable by catalogViewModel.onlyAvailable.collectAsState()
-    val topRatedOnly by catalogViewModel.topRatedOnly.collectAsState()
+    val activeFilter by catalogViewModel.activeFilter.collectAsState()
 
     Scaffold(
         topBar = { CatalogTopBar(onBack = onBack, onNavigateToProfile = onNavigateToProfile) },
@@ -65,11 +59,9 @@ fun CatalogScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
             )
 
-            CatalogFilterChips(
-                onlyAvailable = onlyAvailable,
-                topRatedOnly = topRatedOnly,
-                onToggleAvailable = catalogViewModel::onToggleAvailable,
-                onToggleTopRated = catalogViewModel::onToggleTopRated,
+            CatalogFilterRow(
+                activeFilter = activeFilter,
+                onFilterChange = catalogViewModel::onFilterChange,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
@@ -165,131 +157,87 @@ private fun CatalogSearchBar(query: String, onQueryChange: (String) -> Unit, mod
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CatalogFilterChips(
-    onlyAvailable: Boolean,
-    topRatedOnly: Boolean,
-    onToggleAvailable: () -> Unit,
-    onToggleTopRated: () -> Unit,
+private fun CatalogFilterRow(
+    activeFilter: CatalogFilter,
+    onFilterChange: (CatalogFilter) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        FilterChip(
-            selected = topRatedOnly,
-            onClick = onToggleTopRated,
-            label = { Text("Maior avaliação", fontWeight = if (topRatedOnly) FontWeight.Bold else FontWeight.Medium) },
-            colors = FilterChipDefaults.filterChipColors(
-                selectedContainerColor = UniforPrimary,
-                selectedLabelColor = Color.White
-            ),
-            border = FilterChipDefaults.filterChipBorder(
-                enabled = true,
-                selected = topRatedOnly,
-                borderColor = UniforOutline.copy(alpha = 0.3f),
-                selectedBorderColor = UniforPrimary,
-                disabledBorderColor = Color.Transparent,
-                disabledSelectedBorderColor = Color.Transparent
-            )
-        )
-        FilterChip(
-            selected = onlyAvailable,
-            onClick = onToggleAvailable,
-            label = { Text("Disponíveis", fontWeight = if (onlyAvailable) FontWeight.Bold else FontWeight.Medium) },
-            colors = FilterChipDefaults.filterChipColors(
-                selectedContainerColor = UniforPrimary,
-                selectedLabelColor = Color.White
-            ),
-            border = FilterChipDefaults.filterChipBorder(
-                enabled = true,
-                selected = onlyAvailable,
-                borderColor = UniforOutline.copy(alpha = 0.3f),
-                selectedBorderColor = UniforPrimary,
-                disabledBorderColor = Color.Transparent,
-                disabledSelectedBorderColor = Color.Transparent
-            )
-        )
+    val filters = listOf(
+        CatalogFilter.TODOS to "Todos",
+        CatalogFilter.MAIOR_AVALIACAO to "Maior avaliação",
+        CatalogFilter.DISPONIVEIS to "Disponíveis"
+    )
+
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        filters.forEach { (filter, label) ->
+            val selected = activeFilter == filter
+            Surface(
+                onClick = { onFilterChange(filter) },
+                shape = RoundedCornerShape(50.dp),
+                color = if (selected) UniforPrimary else Color.Transparent,
+                border = if (selected) null else ButtonDefaults.outlinedButtonBorder,
+            ) {
+                Text(
+                    text = label,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    fontSize = 14.sp,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                    color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
     }
 }
 
 @Composable
 private fun CatalogBookCard(book: Book, onClick: () -> Unit) {
     val available = book.exemplaresDisponiveis > 0
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        color = UniforSurface,
-        shadowElevation = 2.dp
-    ) {
-        Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(0.72f)
-            ) {
-                if (book.capaUrl != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(book.capaUrl)
-                            .crossfade(true)
-                            .build(),
-                        placeholder = painterResource(R.drawable.ic_launcher_background),
-                        contentDescription = "Capa de ${book.titulo}",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(UniforPrimary.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            book.titulo,
-                            color = UniforPrimary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            modifier = Modifier.padding(8.dp),
-                            maxLines = 4,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-                Surface(
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .align(Alignment.BottomStart),
-                    color = if (available) UniforSecondaryContainer else Color(0xFFFFDAD6),
-                    shape = RoundedCornerShape(6.dp)
-                ) {
-                    Text(
-                        if (available) "DISPONÍVEL" else "INDISPONÍVEL",
-                        Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Black,
-                        color = if (available) UniforOnSecondaryContainer else Color(0xFFBA1A1A)
-                    )
-                }
-            }
-            Column(Modifier.padding(12.dp)) {
-                Text(
-                    book.titulo,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    book.autor,
-                    fontSize = 12.sp,
-                    color = UniforOutline,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(Modifier.height(4.dp))
-                StarRatingRow(rating = book.mediaAvaliacao.toFloat())
-            }
+
+    Column(modifier = Modifier.clickable(onClick = onClick)) {
+        // FIX: usa BookCoverImage com fallback de erro em vez de AsyncImage direto
+        BookCoverImage(
+            capaUrl = book.capaUrl,
+            titulo = book.titulo,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(0.72f),
+            cornerRadius = 16
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        // Badge de disponibilidade
+        Surface(
+            color = if (available) Color(0xFFB8F5C8) else Color(0xFFE0E0E0),
+            shape = RoundedCornerShape(50.dp)
+        ) {
+            Text(
+                if (available) "DISPONÍVEL" else "INDISPONÍVEL",
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (available) Color(0xFF1A6B35) else Color(0xFF5A5A5A)
+            )
         }
+
+        Spacer(Modifier.height(6.dp))
+        Text(
+            book.titulo,
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            book.autor,
+            fontSize = 12.sp,
+            color = UniforOutline,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(Modifier.height(4.dp))
+        StarRatingRow(rating = book.mediaAvaliacao.toFloat())
     }
 }
 
@@ -298,10 +246,16 @@ private fun StarRatingRow(rating: Float) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         val fullStars = rating.toInt()
         val hasHalf = (rating - fullStars) >= 0.3f
-        val emptyStars = 5 - fullStars - (if (hasHalf) 1 else 0)
-        repeat(fullStars) { Icon(Icons.Default.Star, null, tint = UniforTertiaryFixed, modifier = Modifier.size(14.dp)) }
-        if (hasHalf) Icon(Icons.Default.StarHalf, null, tint = UniforTertiaryFixed, modifier = Modifier.size(14.dp))
-        repeat(emptyStars.coerceAtLeast(0)) { Icon(Icons.Outlined.StarOutline, null, tint = UniforTertiaryFixed, modifier = Modifier.size(14.dp)) }
+        val emptyStars = (5 - fullStars - if (hasHalf) 1 else 0).coerceAtLeast(0)
+        repeat(fullStars) {
+            Icon(Icons.Default.Star, null, tint = UniforTertiaryFixed, modifier = Modifier.size(14.dp))
+        }
+        if (hasHalf) {
+            Icon(Icons.Default.StarHalf, null, tint = UniforTertiaryFixed, modifier = Modifier.size(14.dp))
+        }
+        repeat(emptyStars) {
+            Icon(Icons.Outlined.StarOutline, null, tint = UniforTertiaryFixed, modifier = Modifier.size(14.dp))
+        }
         Spacer(Modifier.width(4.dp))
         Text("%.1f".format(rating), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = UniforOutline)
     }

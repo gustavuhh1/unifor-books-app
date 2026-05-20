@@ -56,6 +56,13 @@ fun ProfileScreen(
             InfoCard("CARGO", uiState.role, Icons.Default.School, UniforSuccessContainer)
             Spacer(Modifier.height(16.dp))
             InfoCard("E-MAIL INSTITUCIONAL", uiState.email, Icons.Default.Email, UniforWarningContainer)
+            Spacer(Modifier.height(16.dp))
+            InfoCard(
+                label = "MEMBRO DESDE",
+                value = uiState.membroDesde,
+                icon = Icons.Default.CalendarMonth,
+                iconBackgroundColor = UniforSurfaceContainerHigh
+            )
             Spacer(Modifier.height(24.dp))
             ActionButton(text = "Alterar Senha", icon = Icons.Default.Lock, onClick = onChangePassword)
             Spacer(Modifier.height(16.dp))

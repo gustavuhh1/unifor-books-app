@@ -21,7 +21,8 @@ class AuthRepository(
                     userName = body.usuario.nome,
                     userEmail = body.usuario.email,
                     userMatricula = body.usuario.matricula,
-                    userRole = body.usuario.role.name
+                    userRole = body.usuario.role.name,
+                    userCriadoEm = body.usuario.criadoEm ?: ""
                 )
             }
         }

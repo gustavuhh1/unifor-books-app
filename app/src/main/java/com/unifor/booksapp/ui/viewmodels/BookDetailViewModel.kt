@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.unifor.booksapp.UniforBooksApp
+import com.unifor.booksapp.data.models.Avaliacao
 import com.unifor.booksapp.data.models.Book
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,14 +19,19 @@ sealed class BookDetailUiState {
 sealed class EmprestimoUiState {
     object Idle : EmprestimoUiState()
     object Loading : EmprestimoUiState()
-    /**
-     * HTTP 201 — empréstimo criado com status PENDENTE.
-     * O admin ainda precisa aprovar; o aluno entra na fila de espera de aprovação.
-     */
     data class NaFila(val posicao: Int) : EmprestimoUiState()
-    /** Livro sem exemplares disponíveis */
     object Indisponivel : EmprestimoUiState()
     data class Error(val message: String) : EmprestimoUiState()
+}
+
+sealed class AvaliacoesUiState {
+    object Loading : AvaliacoesUiState()
+    data class Success(
+        val avaliacoes: List<Avaliacao>,
+        val total: Int,
+        val media: Double
+    ) : AvaliacoesUiState()
+    object Error : AvaliacoesUiState()
 }
 
 class BookDetailViewModel(application: Application) : AndroidViewModel(application) {
@@ -37,6 +43,9 @@ class BookDetailViewModel(application: Application) : AndroidViewModel(applicati
 
     private val _emprestimoState = MutableStateFlow<EmprestimoUiState>(EmprestimoUiState.Idle)
     val emprestimoState = _emprestimoState.asStateFlow()
+
+    private val _avaliacoesState = MutableStateFlow<AvaliacoesUiState>(AvaliacoesUiState.Loading)
+    val avaliacoesState = _avaliacoesState.asStateFlow()
 
     fun loadBook(bookId: String) {
         viewModelScope.launch {
@@ -54,6 +63,28 @@ class BookDetailViewModel(application: Application) : AndroidViewModel(applicati
                 _bookState.value = BookDetailUiState.Error(e.message ?: "Erro de conexão")
             }
         }
+        loadAvaliacoes(bookId)
+    }
+
+    private fun loadAvaliacoes(bookId: String) {
+        viewModelScope.launch {
+            _avaliacoesState.value = AvaliacoesUiState.Loading
+            try {
+                val response = bookRepository.getAvaliacoes(bookId, limit = 5)
+                if (response.isSuccessful && response.body() != null) {
+                    val body = response.body()!!
+                    _avaliacoesState.value = AvaliacoesUiState.Success(
+                        avaliacoes = body.avaliacoes,
+                        total = body.total,
+                        media = body.media
+                    )
+                } else {
+                    _avaliacoesState.value = AvaliacoesUiState.Error
+                }
+            } catch (e: Exception) {
+                _avaliacoesState.value = AvaliacoesUiState.Error
+            }
+        }
     }
 
     fun solicitarEmprestimo(book: Book) {
@@ -66,9 +97,6 @@ class BookDetailViewModel(application: Application) : AndroidViewModel(applicati
             try {
                 val response = bookRepository.solicitarEmprestimo(book.id)
                 when {
-                    // 201 = empréstimo criado com status PENDENTE (aguarda aprovação do admin)
-                    // 202 = entrou na fila de espera por indisponibilidade
-                    // Ambos os casos levam o aluno para a tela "Você está na fila"
                     response.isSuccessful -> {
                         val posicao = response.body()?.fila?.posicao ?: 1
                         _emprestimoState.value = EmprestimoUiState.NaFila(posicao)

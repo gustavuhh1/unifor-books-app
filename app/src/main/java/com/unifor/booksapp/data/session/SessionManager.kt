@@ -21,6 +21,7 @@ class SessionManager(context: Context) {
         private const val KEY_USER_EMAIL = "user_email"
         private const val KEY_USER_MATRICULA = "user_matricula"
         private const val KEY_USER_ROLE = "user_role"
+        private const val KEY_USER_CRIADO_EM = "user_criado_em"
 
         @Volatile
         private var instance: SessionManager? = null
@@ -39,7 +40,8 @@ class SessionManager(context: Context) {
         userName: String,
         userEmail: String,
         userMatricula: String,
-        userRole: String
+        userRole: String,
+        userCriadoEm: String = ""
     ) {
         prefs.edit()
             .putString(KEY_ACCESS_TOKEN, accessToken)
@@ -49,6 +51,7 @@ class SessionManager(context: Context) {
             .putString(KEY_USER_EMAIL, userEmail)
             .putString(KEY_USER_MATRICULA, userMatricula)
             .putString(KEY_USER_ROLE, userRole)
+            .putString(KEY_USER_CRIADO_EM, userCriadoEm)
             .apply()
     }
 
@@ -59,6 +62,7 @@ class SessionManager(context: Context) {
     fun getUserEmail(): String? = prefs.getString(KEY_USER_EMAIL, null)
     fun getUserMatricula(): String? = prefs.getString(KEY_USER_MATRICULA, null)
     fun getUserRole(): String? = prefs.getString(KEY_USER_ROLE, null)
+    fun getUserCriadoEm(): String? = prefs.getString(KEY_USER_CRIADO_EM, null)
 
     fun isLoggedIn(): Boolean = getAccessToken() != null
 

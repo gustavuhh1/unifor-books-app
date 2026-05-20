@@ -15,6 +15,8 @@ sealed class CatalogUiState {
     data class Error(val message: String) : CatalogUiState()
 }
 
+enum class CatalogFilter { TODOS, MAIOR_AVALIACAO, DISPONIVEIS }
+
 @OptIn(FlowPreview::class)
 class CatalogViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -26,17 +28,20 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
     private val _query = MutableStateFlow("")
     val query = _query.asStateFlow()
 
-    private val _onlyAvailable = MutableStateFlow(false)
-    val onlyAvailable = _onlyAvailable.asStateFlow()
+    private val _activeFilter = MutableStateFlow(CatalogFilter.TODOS)
+    val activeFilter = _activeFilter.asStateFlow()
 
-    private val _topRatedOnly = MutableStateFlow(false)
-    val topRatedOnly = _topRatedOnly.asStateFlow()
+    // Mantidos para compatibilidade com código existente
+    val onlyAvailable = _activeFilter.map { it == CatalogFilter.DISPONIVEIS }.stateIn(
+        viewModelScope, SharingStarted.Eagerly, false
+    )
+    val topRatedOnly = _activeFilter.map { it == CatalogFilter.MAIOR_AVALIACAO }.stateIn(
+        viewModelScope, SharingStarted.Eagerly, false
+    )
 
-    // Cache local para filtros client-side após carregamento
     private var allBooks: List<Book> = emptyList()
 
     init {
-        // Debounce na query para não chamar a API a cada tecla
         _query
             .debounce(400)
             .onEach { fetchBooks() }
@@ -49,14 +54,23 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
         _query.value = value
     }
 
-    fun onToggleAvailable() {
-        _onlyAvailable.value = !_onlyAvailable.value
+    fun onFilterChange(filter: CatalogFilter) {
+        _activeFilter.value = filter
         applyLocalFilter()
     }
 
+    fun onToggleAvailable() {
+        onFilterChange(
+            if (_activeFilter.value == CatalogFilter.DISPONIVEIS) CatalogFilter.TODOS
+            else CatalogFilter.DISPONIVEIS
+        )
+    }
+
     fun onToggleTopRated() {
-        _topRatedOnly.value = !_topRatedOnly.value
-        applyLocalFilter()
+        onFilterChange(
+            if (_activeFilter.value == CatalogFilter.MAIOR_AVALIACAO) CatalogFilter.TODOS
+            else CatalogFilter.MAIOR_AVALIACAO
+        )
     }
 
     fun fetchBooks() {
@@ -81,9 +95,11 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
 
     private fun applyLocalFilter() {
         val filtered = allBooks.filter { book ->
-            val availableOk = if (_onlyAvailable.value) book.exemplaresDisponiveis > 0 else true
-            val topRatedOk = if (_topRatedOnly.value) book.mediaAvaliacao >= 4.0 else true
-            availableOk && topRatedOk
+            when (_activeFilter.value) {
+                CatalogFilter.TODOS -> true
+                CatalogFilter.DISPONIVEIS -> book.exemplaresDisponiveis > 0
+                CatalogFilter.MAIOR_AVALIACAO -> book.mediaAvaliacao >= 4.0
+            }
         }
         _uiState.value = CatalogUiState.Success(filtered)
     }

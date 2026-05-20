@@ -16,6 +16,10 @@ interface ApiService {
     @POST("auth/logout")
     suspend fun logout(@Body body: Map<String, String>): Response<Unit>
 
+    // ── Usuário ───────────────────────────────────────────────
+    @GET("usuarios/me")
+    suspend fun getMe(): Response<UsuarioResponse>
+
     // ── Books ─────────────────────────────────────────────────
     @GET("books")
     suspend fun getBooks(
@@ -29,6 +33,14 @@ interface ApiService {
 
     @GET("books/{id}")
     suspend fun getBookById(@Path("id") id: String): Response<Book>
+
+    // ── Avaliações (ratings) ──────────────────────────────────
+    @GET("books/{id}/ratings")
+    suspend fun getAvaliacoes(
+        @Path("id") bookId: String,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 10
+    ): Response<AvaliacoesResponse>
 
     // ── Empréstimos ───────────────────────────────────────────
     @POST("emprestimos/solicitar")

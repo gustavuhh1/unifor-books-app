@@ -82,18 +82,8 @@ class MainActivity : ComponentActivity() {
                         // Main Screens
                         composable(Screen.Home.route) {
                             HomeScreen(
-                                onNavigateToCatalog = { navController.navigate(Screen.Catalog.route) },
                                 onNavigateToBookDetails = { bookId ->
                                     navController.navigate(Screen.BookDetails.createRoute(bookId))
-                                },
-                                onNavigateToLoanApproved = { navController.navigate(Screen.LoanApproved.route) },
-                                onNavigateToLoanUnavailable = { navController.navigate(Screen.LoanUnavailable.route) },
-                                onNavigateToLoanQueue = { navController.navigate(Screen.LoanQueue.createRoute(3)) },
-                                onNavigateToReportComment = { navController.navigate(Screen.ReportComment.createRoute("dev")) },
-                                onNavigateToLogin = {
-                                    navController.navigate(Screen.Login.route) {
-                                        popUpTo(0) { inclusive = true }
-                                    }
                                 }
                             )
                         }
