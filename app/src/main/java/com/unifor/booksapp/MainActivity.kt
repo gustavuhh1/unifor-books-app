@@ -83,7 +83,9 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.Home.route) {
                             HomeScreen(
                                 onNavigateToCatalog = { navController.navigate(Screen.Catalog.route) },
-                                onNavigateToBookDetails = { bookId -> navController.navigate(Screen.BookDetails.createRoute(bookId)) },
+                                onNavigateToBookDetails = { bookId ->
+                                    navController.navigate(Screen.BookDetails.createRoute(bookId))
+                                },
                                 onNavigateToLoanApproved = { navController.navigate(Screen.LoanApproved.route) },
                                 onNavigateToLoanUnavailable = { navController.navigate(Screen.LoanUnavailable.route) },
                                 onNavigateToLoanQueue = { navController.navigate(Screen.LoanQueue.createRoute(3)) },
@@ -97,19 +99,30 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Screen.Catalog.route) {
                             CatalogScreen(
-                                onBookClick = { bookId -> navController.navigate(Screen.BookDetails.createRoute(bookId)) },
+                                onBookClick = { bookId ->
+                                    navController.navigate(Screen.BookDetails.createRoute(bookId))
+                                },
                                 onBack = { navController.popBackStack() },
                                 onNavigateToProfile = { navController.navigate(Screen.Profile.route) }
                             )
                         }
-                        composable(Screen.BookDetails.route) {
+                        composable(
+                            route = Screen.BookDetails.route,
+                            arguments = listOf(navArgument("bookId") { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            val bookId = backStackEntry.arguments?.getString("bookId") ?: ""
                             BookDetailScreen(
+                                bookId = bookId,
                                 onBack = { navController.popBackStack() },
-                                onReportComment = { commentId -> navController.navigate(Screen.ReportComment.createRoute(commentId)) },
+                                onReportComment = { commentId ->
+                                    navController.navigate(Screen.ReportComment.createRoute(commentId))
+                                },
                                 onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
-                                onNavigateToLoanQueue = { navController.navigate(Screen.LoanQueue.createRoute(3)) },
                                 onNavigateToLoanApproved = { navController.navigate(Screen.LoanApproved.route) },
-                                onNavigateToLoanUnavailable = { navController.navigate(Screen.LoanUnavailable.route) }
+                                onNavigateToLoanUnavailable = { navController.navigate(Screen.LoanUnavailable.route) },
+                                onNavigateToLoanQueue = { position ->
+                                    navController.navigate(Screen.LoanQueue.createRoute(position))
+                                }
                             )
                         }
 
@@ -163,10 +176,17 @@ class MainActivity : ComponentActivity() {
                             FinesPolicyScreen(onBack = { navController.popBackStack() })
                         }
                         composable(Screen.RenewalAvailable.route) {
-                            RenewalAvailableScreen(onBack = { navController.popBackStack() }, onGoToCollection = {}, newDueDate = null)
+                            RenewalAvailableScreen(
+                                onBack = { navController.popBackStack() },
+                                onGoToCollection = {},
+                                newDueDate = null
+                            )
                         }
                         composable(Screen.RenewalUnavailable.route) {
-                            RenewalUnavailableScreen(onBack = { navController.popBackStack() }, onGoToCollection = {})
+                            RenewalUnavailableScreen(
+                                onBack = { navController.popBackStack() },
+                                onGoToCollection = {}
+                            )
                         }
 
                         // Loan Status
@@ -206,7 +226,12 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Screen.ReportConfirmation.route) {
                             ReportConfirmationScreen(
-                                onBackToBook = { navController.popBackStack(Screen.BookDetails.route.substringBefore("{"), false) },
+                                onBackToBook = {
+                                    navController.popBackStack(
+                                        Screen.BookDetails.route.substringBefore("{"),
+                                        false
+                                    )
+                                },
                                 onGoToHome = { navController.navigate(Screen.Home.route) { popUpTo(0) } },
                                 onBack = { navController.popBackStack() }
                             )
