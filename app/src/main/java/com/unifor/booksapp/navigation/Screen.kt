@@ -9,6 +9,10 @@ sealed class Screen(val route: String) {
     }
     object Profile : Screen("profile")
 
+    // Alterar Senha
+    object ChangePassword : Screen("profile/change-password")
+    object ChangePasswordSuccess : Screen("profile/change-password/success")
+
     // Telas de status de empréstimo
     object LoanApproved : Screen("loan/approved")
     object LoanUnavailable : Screen("loan/unavailable")

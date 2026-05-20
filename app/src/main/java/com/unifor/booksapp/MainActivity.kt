@@ -40,7 +40,9 @@ class MainActivity : ComponentActivity() {
                     Screen.FinesPolicy.route,
                     Screen.RenewalAvailable.route,
                     Screen.RenewalUnavailable.route,
-                    Screen.Profile.route
+                    Screen.Profile.route,
+                    Screen.ChangePassword.route,
+                    Screen.ChangePasswordSuccess.route
                 )
                 val showBottomBar = currentRoute != null &&
                         hideBottomBarRoutes.none { currentRoute.startsWith(it.substringBefore("{")) }
@@ -64,12 +66,16 @@ class MainActivity : ComponentActivity() {
                     NavHost(
                         navController = navController,
                         startDestination = Screen.Login.route,
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(bottom = innerPadding.calculateBottomPadding())
                     ) {
                         // Auth
                         composable(Screen.Login.route) {
                             LoginScreen(onLoginSuccess = {
-                                navController.navigate(Screen.Home.route) { popUpTo(Screen.Login.route) { inclusive = true } }
+                                navController.navigate(Screen.Home.route) {
+                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                }
                             })
                         }
 
@@ -100,15 +106,42 @@ class MainActivity : ComponentActivity() {
                             BookDetailScreen(
                                 onBack = { navController.popBackStack() },
                                 onReportComment = { commentId -> navController.navigate(Screen.ReportComment.createRoute(commentId)) },
-                                onNavigateToProfile = { navController.navigate(Screen.Profile.route) }
+                                onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
+                                onNavigateToLoanQueue = { navController.navigate(Screen.LoanQueue.createRoute(3)) },
+                                onNavigateToLoanApproved = { navController.navigate(Screen.LoanApproved.route) },
+                                onNavigateToLoanUnavailable = { navController.navigate(Screen.LoanUnavailable.route) }
                             )
                         }
+
+                        // Profile
                         composable(Screen.Profile.route) {
                             ProfileScreen(
                                 onBack = { navController.popBackStack() },
                                 onLogout = {
                                     navController.navigate(Screen.Login.route) {
                                         popUpTo(0) { inclusive = true }
+                                    }
+                                },
+                                onChangePassword = { navController.navigate(Screen.ChangePassword.route) }
+                            )
+                        }
+
+                        // Change Password Flow
+                        composable(Screen.ChangePassword.route) {
+                            ChangePasswordScreen(
+                                onBack = { navController.popBackStack() },
+                                onPasswordChanged = {
+                                    navController.navigate(Screen.ChangePasswordSuccess.route) {
+                                        popUpTo(Screen.ChangePassword.route) { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+                        composable(Screen.ChangePasswordSuccess.route) {
+                            ChangePasswordSuccessScreen(
+                                onBackToProfile = {
+                                    navController.navigate(Screen.Profile.route) {
+                                        popUpTo(Screen.ChangePasswordSuccess.route) { inclusive = true }
                                     }
                                 }
                             )
@@ -126,7 +159,9 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToProfile = { navController.navigate(Screen.Profile.route) }
                             )
                         }
-                        composable(Screen.FinesPolicy.route) { FinesPolicyScreen(onBack = { navController.popBackStack() }) }
+                        composable(Screen.FinesPolicy.route) {
+                            FinesPolicyScreen(onBack = { navController.popBackStack() })
+                        }
                         composable(Screen.RenewalAvailable.route) {
                             RenewalAvailableScreen(onBack = { navController.popBackStack() }, onGoToCollection = {}, newDueDate = null)
                         }
@@ -135,19 +170,37 @@ class MainActivity : ComponentActivity() {
                         }
 
                         // Loan Status
-                        composable(Screen.LoanApproved.route) { LoanApprovedScreen(onViewLoans = {}, onBack = { navController.popBackStack() }) }
-                        composable(Screen.LoanUnavailable.route) { LoanUnavailableScreen(onBack = { navController.popBackStack() }) }
+                        composable(Screen.LoanApproved.route) {
+                            LoanApprovedScreen(
+                                onViewLoans = { navController.navigate(Screen.MyLoans.route) },
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Screen.LoanUnavailable.route) {
+                            LoanUnavailableScreen(
+                                onBack = { navController.popBackStack() },
+                                onJoinQueue = { navController.navigate(Screen.LoanQueue.createRoute(3)) }
+                            )
+                        }
                         composable(
                             route = Screen.LoanQueue.route,
                             arguments = listOf(navArgument("position") { type = NavType.IntType })
-                        ) {
-                            LoanQueueScreen(queuePosition = it.arguments?.getInt("position"), onBack = { navController.popBackStack() })
+                        ) { backStackEntry ->
+                            LoanQueueScreen(
+                                queuePosition = backStackEntry.arguments?.getInt("position"),
+                                onBack = { navController.popBackStack() },
+                                onViewLoans = { navController.navigate(Screen.MyLoans.route) }
+                            )
                         }
 
                         // Report Flow
                         composable(Screen.ReportComment.route) {
                             ReportCommentScreen(
-                                onSendReport = { navController.navigate(Screen.ReportConfirmation.route) { popUpTo(Screen.ReportComment.route) { inclusive = true } } },
+                                onSendReport = {
+                                    navController.navigate(Screen.ReportConfirmation.route) {
+                                        popUpTo(Screen.ReportComment.route) { inclusive = true }
+                                    }
+                                },
                                 onBack = { navController.popBackStack() }
                             )
                         }

@@ -3,20 +3,33 @@ package com.unifor.booksapp.data.models
 import com.google.gson.annotations.SerializedName
 
 data class Book(
-    @field:SerializedName("id") val id: String,
-    @field:SerializedName("titulo") val titulo: String,
-    @field:SerializedName("autor") val autor: String,
-    @field:SerializedName("isbn") val isbn: String,
-    @field:SerializedName("sinopse") val sinopse: String,
-    @field:SerializedName("capaUrl") val capaUrl: String,
-    @field:SerializedName("categoria") val categoria: String,
-    @field:SerializedName("anoPublicacao") val anoPublicacao: Int,
-    @field:SerializedName("editora") val editora: String,
-    @field:SerializedName("idioma") val idioma: String,
-    @field:SerializedName("paginas") val paginas: Int,
-    @field:SerializedName("ativo") val ativo: Boolean,
-    @field:SerializedName("criadoEm") val criadoEm: String,
-    @field:SerializedName("totalExemplares") val totalExemplares: Int,
-    @field:SerializedName("exemplaresDisponiveis") val exemplaresDisponiveis: Int,
-    @field:SerializedName("mediaAvaliacao") val mediaAvaliacao: Double
+    @SerializedName("id") val id: String,
+    @SerializedName("titulo") val titulo: String,
+    @SerializedName("autor") val autor: String,
+    @SerializedName("isbn") val isbn: String,
+    @SerializedName("sinopse") val sinopse: String? = null,
+    @SerializedName("capaUrl") val capaUrl: String? = null,
+    @SerializedName("categoria") val categoria: String,
+    @SerializedName("anoPublicacao") val anoPublicacao: Int? = null,
+    @SerializedName("editora") val editora: String? = null,
+    @SerializedName("idioma") val idioma: String? = null,
+    @SerializedName("paginas") val paginas: Int? = null,
+    @SerializedName("ativo") val ativo: Boolean = true,
+    @SerializedName("criadoEm") val criadoEm: String = "",
+    @SerializedName("totalExemplares") val totalExemplares: Int = 0,
+    @SerializedName("exemplaresDisponiveis") val exemplaresDisponiveis: Int = 0,
+    @SerializedName("mediaAvaliacao") val mediaAvaliacao: Double = 0.0,
+    @SerializedName("exemplares") val exemplares: List<Exemplar>? = null
 )
+
+data class Exemplar(
+    @SerializedName("id") val id: String,
+    @SerializedName("numeroTombo") val numeroTombo: String,
+    @SerializedName("status") val status: ExemplarStatus
+)
+
+enum class ExemplarStatus {
+    @SerializedName("DISPONIVEL") DISPONIVEL,
+    @SerializedName("EMPRESTADO") EMPRESTADO,
+    @SerializedName("INDISPONIVEL") INDISPONIVEL
+}

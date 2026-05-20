@@ -1,8 +1,9 @@
 package com.unifor.booksapp.ui.viewmodels
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.unifor.booksapp.data.BookRepository
+import com.unifor.booksapp.UniforBooksApp
 import com.unifor.booksapp.data.models.Book
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,9 +15,9 @@ sealed class HomeUiState {
     data class Error(val message: String) : HomeUiState()
 }
 
-class HomeViewModel(
-    private val bookRepository: BookRepository = BookRepository()
-) : ViewModel() {
+class HomeViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val bookRepository = (application as UniforBooksApp).bookRepository
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState = _uiState.asStateFlow()
@@ -25,7 +26,7 @@ class HomeViewModel(
         fetchBooks()
     }
 
-    private fun fetchBooks() {
+    fun fetchBooks() {
         viewModelScope.launch {
             _uiState.value = HomeUiState.Loading
             try {

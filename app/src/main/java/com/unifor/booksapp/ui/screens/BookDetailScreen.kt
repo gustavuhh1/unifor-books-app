@@ -23,7 +23,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.unifor.booksapp.navigation.Screen
 import com.unifor.booksapp.ui.theme.*
 
 private data class BookDetailsData(
@@ -73,13 +72,17 @@ private val mockBookDetails = BookDetailsData(
     )
 )
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookDetailScreen(
     onBack: () -> Unit,
     onReportComment: (String) -> Unit = {},
-    onNavigateToProfile: () -> Unit
+    onNavigateToProfile: () -> Unit,
+    // Solicitar empréstimo → sempre vai para a fila (backend decide aprovação)
+    onNavigateToLoanQueue: () -> Unit,
+    // Telas de decisão do admin (acessadas via Dev Menu ou notificação futura)
+    onNavigateToLoanApproved: () -> Unit = {},
+    onNavigateToLoanUnavailable: () -> Unit = {}
 ) {
     val book = mockBookDetails
 
@@ -97,7 +100,7 @@ fun BookDetailScreen(
             Spacer(modifier = Modifier.height(16.dp))
             BookInfoSection(book)
             Spacer(modifier = Modifier.height(24.dp))
-            BookDescriptionSection(book)
+            BookDescriptionSection(book, onNavigateToLoanQueue, onNavigateToLoanUnavailable)
             Spacer(modifier = Modifier.height(24.dp))
             ReadingAnalysisSection(book.analysis)
             Spacer(modifier = Modifier.height(24.dp))
@@ -207,17 +210,8 @@ private fun BookInfoSection(book: BookDetailsData) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            RatingItem(
-                value = book.rating.toString(),
-                label = "AVALIAÇÕES",
-                caption = "${book.reviewCount} Leitores",
-                hasStars = true
-            )
-            RatingItem(
-                value = book.pages.toString(),
-                label = "PÁGINAS",
-                caption = "4-5h de leitura"
-            )
+            RatingItem(value = book.rating.toString(), label = "AVALIAÇÕES", caption = "${book.reviewCount} Leitores", hasStars = true)
+            RatingItem(value = book.pages.toString(), label = "PÁGINAS", caption = "4-5h de leitura")
         }
     }
 }
@@ -240,15 +234,29 @@ private fun RatingItem(value: String, label: String, caption: String, hasStars: 
 }
 
 @Composable
-private fun BookDescriptionSection(book: BookDetailsData) {
+private fun BookDescriptionSection(
+    book: BookDetailsData,
+    onNavigateToLoanQueue: () -> Unit,
+    onNavigateToLoanUnavailable: () -> Unit
+) {
     Column(modifier = Modifier.padding(horizontal = 24.dp)) {
         Text("Descrição da Obra", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = UniforPrimary)
         Spacer(modifier = Modifier.height(8.dp))
         Text(book.description, fontSize = 14.sp, color = UniforOutline, lineHeight = 20.sp)
         Spacer(modifier = Modifier.height(16.dp))
         Button(
-            onClick = { /* TODO */ },
-            modifier = Modifier.fillMaxWidth().height(48.dp),
+            onClick = {
+                // Disponível → entra na fila aguardando aprovação do admin
+                // Indisponível → exibe tela de livro indisponível
+                if (book.isAvailable) {
+                    onNavigateToLoanQueue()
+                } else {
+                    onNavigateToLoanUnavailable()
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
             colors = ButtonDefaults.buttonColors(containerColor = UniforPrimary)
         ) {
             Text("Solicitar Empréstimo", fontWeight = FontWeight.Bold)
@@ -312,7 +320,7 @@ private fun CommunityCommentsSection(comments: List<BookComment>, onReportClick:
         }
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedButton(
-            onClick = { /* TODO */ },
+            onClick = { },
             modifier = Modifier.fillMaxWidth(),
             border = BorderStroke(1.dp, UniforOutline.copy(alpha = 0.3f))
         ) {
@@ -326,28 +334,18 @@ private fun CommentCard(comment: BookComment, onReportClick: () -> Unit) {
     var isLiked by remember { mutableStateOf(comment.isLiked) }
     var likeCount by remember { mutableIntStateOf(comment.likes) }
 
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = UniforSurface,
-        shadowElevation = 1.dp
-    ) {
+    Surface(shape = RoundedCornerShape(16.dp), color = UniforSurface, shadowElevation = 1.dp) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(UniforPrimary.copy(alpha=0.2f)), contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(UniforPrimary.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
                         Icon(Icons.Default.Person, null, tint = UniforPrimary)
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(verticalArrangement = Arrangement.Center) {
                         Text(comment.authorName, fontWeight = FontWeight.Bold, color = UniforPrimary)
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            // Static 5 stars based on mock data
-                            repeat(5) {
-                                Icon(Icons.Default.Star, null, tint = UniforTertiary, modifier = Modifier.size(12.dp))
-                            }
+                            repeat(5) { Icon(Icons.Default.Star, null, tint = UniforTertiary, modifier = Modifier.size(12.dp)) }
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("• ${comment.timeAgo}", fontSize = 11.sp, color = UniforOutline)
                         }
@@ -362,30 +360,21 @@ private fun CommentCard(comment: BookComment, onReportClick: () -> Unit) {
             Spacer(modifier = Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(
-                    onClick = {
-                        isLiked = !isLiked
-                        if(isLiked) likeCount++ else likeCount--
-                    },
-                    border = BorderStroke(1.dp, if(isLiked) UniforSuccess else UniforOutline.copy(alpha = 0.3f)),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = if(isLiked) UniforSuccessContainer else Color.Transparent
-                    )
+                    onClick = { isLiked = !isLiked; if (isLiked) likeCount++ else likeCount-- },
+                    border = BorderStroke(1.dp, if (isLiked) UniforSuccess else UniforOutline.copy(alpha = 0.3f)),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = if (isLiked) UniforSuccessContainer else Color.Transparent)
                 ) {
                     Icon(
-                        if(isLiked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
+                        if (isLiked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
                         contentDescription = "Like",
                         modifier = Modifier.size(16.dp),
-                        tint = if(isLiked) UniforOnSecondaryContainer else UniforOutline
+                        tint = if (isLiked) UniforOnSecondaryContainer else UniforOutline
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        likeCount.toString(),
-                        fontWeight = FontWeight.Bold,
-                        color = if(isLiked) UniforOnSecondaryContainer else UniforOutline
-                    )
+                    Text(likeCount.toString(), fontWeight = FontWeight.Bold, color = if (isLiked) UniforOnSecondaryContainer else UniforOutline)
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                TextButton(onClick = { /*TODO*/ }) {
+                TextButton(onClick = { }) {
                     Text("Responder", fontWeight = FontWeight.Bold, color = UniforOutline)
                 }
             }

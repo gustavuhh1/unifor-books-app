@@ -1,9 +1,9 @@
 package com.unifor.booksapp.ui.viewmodels
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.unifor.booksapp.data.AuthRepository
-import com.unifor.booksapp.data.remote.request.LoginRequest
+import com.unifor.booksapp.UniforBooksApp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -15,20 +15,33 @@ sealed class LoginUiState {
     data class Error(val message: String) : LoginUiState()
 }
 
-class LoginViewModel(
-    private val authRepository: AuthRepository = AuthRepository()
-) : ViewModel() {
+class LoginViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val authRepository = (application as UniforBooksApp).authRepository
 
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
     val uiState = _uiState.asStateFlow()
 
-    val email = MutableStateFlow("")
-    val password = MutableStateFlow("")
+    val matricula = MutableStateFlow("")
+    val senha = MutableStateFlow("")
 
     fun login() {
-        // A lógica de login real foi removida conforme solicitado.
-        // A pessoa responsável pela tela de login deverá implementar a chamada à API aqui.
-        // Por enquanto, estamos simulando um sucesso para permitir a navegação.
-        _uiState.value = LoginUiState.Success
+        viewModelScope.launch {
+            _uiState.value = LoginUiState.Loading
+            try {
+                val response = authRepository.login(matricula.value.trim(), senha.value)
+                if (response.isSuccessful) {
+                    _uiState.value = LoginUiState.Success
+                } else {
+                    val errorMsg = when (response.code()) {
+                        401 -> "Matrícula ou senha incorretos"
+                        else -> "Erro ao fazer login (${response.code()})"
+                    }
+                    _uiState.value = LoginUiState.Error(errorMsg)
+                }
+            } catch (e: Exception) {
+                _uiState.value = LoginUiState.Error(e.message ?: "Erro de conexão")
+            }
+        }
     }
 }

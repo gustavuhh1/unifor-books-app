@@ -1,6 +1,8 @@
 package com.unifor.booksapp.data.remote.request
 
+import com.google.gson.annotations.SerializedName
+
 data class LoginRequest(
-    val email: String,
-    val password: String
+    @SerializedName("matricula") val matricula: String,
+    @SerializedName("senha") val senha: String
 )

@@ -1,6 +1,5 @@
 package com.unifor.booksapp.ui.screens
 
-import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -23,15 +22,25 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.unifor.booksapp.ui.theme.*
+import com.unifor.booksapp.ui.viewmodels.LoginUiState
+import com.unifor.booksapp.ui.viewmodels.LoginViewModel
 
-/**
- * Padrão de Engenharia: Unidirectional Data Flow (UDF).
- * A LoginScreen agora expõe eventos via callbacks (onLoginSuccess), 
- * permitindo que o orquestrador (NavHost) decida o próximo passo.
- */
 @Composable
-fun LoginScreen(onLoginSuccess: () -> Unit) {
+fun LoginScreen(
+    onLoginSuccess: () -> Unit,
+    loginViewModel: LoginViewModel = viewModel()
+) {
+    val uiState by loginViewModel.uiState.collectAsState()
+    val matricula by loginViewModel.matricula.collectAsState()
+    val senha by loginViewModel.senha.collectAsState()
+    var rememberMe by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState) {
+        if (uiState is LoginUiState.Success) onLoginSuccess()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -45,25 +54,21 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
         Spacer(modifier = Modifier.height(32.dp))
         HeaderComponent()
         Spacer(modifier = Modifier.height(32.dp))
-        
-        var matricula by remember { mutableStateOf("") }
-        var senha by remember { mutableStateOf("") }
-        var rememberMe by remember { mutableStateOf(false) }
 
         InputComponent(
             label = "MATRÍCULA",
             value = matricula,
-            onValueChange = { matricula = it },
+            onValueChange = { loginViewModel.matricula.value = it },
             placeholder = "Digite sua matrícula",
             leadingIcon = Icons.Default.Person
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         InputComponent(
             label = "SENHA",
             value = senha,
-            onValueChange = { senha = it },
+            onValueChange = { loginViewModel.senha.value = it },
             placeholder = "Sua senha de acesso",
             leadingIcon = Icons.Default.Lock,
             isPassword = true,
@@ -76,21 +81,38 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 )
             }
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         RememberMeComponent(checked = rememberMe, onCheckedChange = { rememberMe = it })
-        
+
+        // Exibe erro se houver
+        if (uiState is LoginUiState.Error) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = UniforErrorContainer,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = (uiState as LoginUiState.Error).message,
+                    color = UniforError,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.height(32.dp))
-        
-        LoginButton(onClick = onLoginSuccess)
-        
+
+        LoginButton(
+            onClick = { loginViewModel.login() },
+            isLoading = uiState is LoginUiState.Loading
+        )
+
         Spacer(modifier = Modifier.height(24.dp))
-        
         SupportSection()
-        
         Spacer(modifier = Modifier.height(40.dp))
-        
         CopyrightSection()
     }
 }
@@ -115,12 +137,7 @@ fun LogoComponent() {
                 tint = iconColor,
                 modifier = Modifier.size(48.dp)
             )
-            Text(
-                text = "Unifor",
-                color = textColor,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp
-            )
+            Text(text = "Unifor", color = textColor, fontWeight = FontWeight.Bold, fontSize = 20.sp)
         }
     }
 }
@@ -164,20 +181,14 @@ fun InputComponent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = label,
-                color = MaterialTheme.colorScheme.secondary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text(text = label, color = MaterialTheme.colorScheme.secondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             trailingAction?.invoke()
         }
         Spacer(modifier = Modifier.height(8.dp))
         TextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             placeholder = { Text(text = placeholder, color = MaterialTheme.colorScheme.secondary) },
             leadingIcon = { Icon(imageVector = leadingIcon, contentDescription = null, tint = MaterialTheme.colorScheme.secondary) },
             trailingIcon = if (isPassword) {
@@ -208,79 +219,57 @@ fun InputComponent(
 
 @Composable
 fun RememberMeComponent(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Checkbox(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
         )
-        Text(
-            text = "Mantenha-me conectado",
-            color = MaterialTheme.colorScheme.secondary,
-            fontSize = 14.sp
-        )
+        Text(text = "Mantenha-me conectado", color = MaterialTheme.colorScheme.secondary, fontSize = 14.sp)
     }
 }
 
 @Composable
-fun LoginButton(onClick: () -> Unit) {
+fun LoginButton(onClick: () -> Unit, isLoading: Boolean = false) {
     Button(
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp),
+        enabled = !isLoading,
+        modifier = Modifier.fillMaxWidth().height(56.dp),
         colors = ButtonDefaults.buttonColors(containerColor = UniforDarkBlue),
         shape = RoundedCornerShape(12.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "Entrar", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.White)
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "Entrar", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.White)
+            }
         }
     }
 }
 
 @Composable
 fun SupportSection() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            SupportButton(
-                icon = Icons.Default.Help, 
-                text = "SUPORTE",
-                modifier = Modifier.weight(1f)
-            )
-            SupportButton(
-                icon = Icons.Default.Email,
-                text = "CONTATO",
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SupportButton(icon = Icons.Default.Help, text = "SUPORTE", modifier = Modifier.weight(1f))
+        SupportButton(icon = Icons.Default.Email, text = "CONTATO", modifier = Modifier.weight(1f))
     }
 }
 
 @Composable
 fun SupportButton(icon: ImageVector, text: String, modifier: Modifier = Modifier) {
     val isDark = isSystemInDarkTheme()
-    val iconColor = if (isDark) UniforTextGray else UniforBlue
-    val textColor = UniforTextGray
-
-
-    TextButton(
-        onClick = { /* Handle click */ },
-        modifier = modifier
-    ) {
+    TextButton(onClick = { }, modifier = modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(imageVector = icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(18.dp))
+            Icon(imageVector = icon, contentDescription = null, tint = if (isDark) UniforTextGray else UniforBlue, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = text, color = textColor, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text(text = text, color = UniforTextGray, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -296,7 +285,7 @@ fun CopyrightSection() {
     )
 }
 
-@Preview(showBackground = true, name = "Light Mode")
+@Preview(showBackground = true)
 @Composable
 fun LoginPreviewLight() {
     UniforBooksAppTheme(darkTheme = false) {
