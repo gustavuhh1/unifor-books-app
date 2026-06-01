@@ -21,7 +21,8 @@ data class AdminEmprestimo(
     @SerializedName("dataDevolucaoReal") val dataDevolucaoReal: String? = null,
     // Dados relacionais embutidos pelo backend para o painel admin
     @SerializedName("usuario") val usuario: AdminEmprestimoUsuario? = null,
-    @SerializedName("livro") val livro: AdminEmprestimoLivro? = null
+    @SerializedName("livro") val livro: AdminEmprestimoLivro? = null,
+    @SerializedName("multa") val multa: AdminEmprestimoMulta? = null
 )
 
 data class AdminEmprestimoUsuario(
@@ -36,4 +37,12 @@ data class AdminEmprestimoLivro(
     @SerializedName("titulo") val titulo: String,
     @SerializedName("autor") val autor: String,
     @SerializedName("capaUrl") val capaUrl: String? = null
+)
+
+// Multa embutida para exibição direta no painel Em Atraso (evita N+1 requests)
+data class AdminEmprestimoMulta(
+    @SerializedName("id") val id: String,
+    @SerializedName("valorTotal") val valorTotal: Double,
+    @SerializedName("diasAtraso") val diasAtraso: Int = 0,
+    @SerializedName("status") val status: String = ""
 )

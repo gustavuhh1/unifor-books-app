@@ -58,6 +58,10 @@ interface ApiService {
     @PATCH("emprestimos/{id}/cancelar")
     suspend fun cancelarEmprestimo(@Path("id") id: String): Response<EmprestimoActionResponse>
 
+    // Aluno solicita devolução — reutilizado pelo admin para registrar recebimento físico
+    @PATCH("emprestimos/{id}/devolver")
+    suspend fun devolverEmprestimo(@Path("id") id: String): Response<EmprestimoActionResponse>
+
     // ── Empréstimos (Admin) ───────────────────────────────────
     @GET("emprestimos")
     suspend fun getAdminEmprestimos(): Response<AdminEmprestimosResponse>
@@ -77,4 +81,7 @@ interface ApiService {
     // ── Multas ────────────────────────────────────────────────
     @GET("multas/minhas")
     suspend fun getMinhasMultas(): Response<MultasResponse>
+
+    @PATCH("multas/{id}/quitar")
+    suspend fun quitarMulta(@Path("id") id: String): Response<MultaActionResponse>
 }

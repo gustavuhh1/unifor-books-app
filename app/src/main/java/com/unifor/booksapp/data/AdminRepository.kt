@@ -4,6 +4,7 @@ import com.unifor.booksapp.data.remote.ApiService
 import com.unifor.booksapp.data.remote.request.NegarEmprestimoRequest
 import com.unifor.booksapp.data.remote.response.AdminEmprestimosResponse
 import com.unifor.booksapp.data.remote.response.EmprestimoActionResponse
+import com.unifor.booksapp.data.remote.response.MultaActionResponse
 import retrofit2.Response
 
 class AdminRepository(private val api: ApiService) {
@@ -22,4 +23,10 @@ class AdminRepository(private val api: ApiService) {
 
     suspend fun cancelarEmprestimo(id: String): Response<EmprestimoActionResponse> =
         api.cancelarEmprestimo(id)
+
+    suspend fun devolverEmprestimo(id: String): Response<EmprestimoActionResponse> =
+        api.devolverEmprestimo(id)
+
+    suspend fun quitarMulta(multaId: String): Response<MultaActionResponse> =
+        api.quitarMulta(multaId)
 }
