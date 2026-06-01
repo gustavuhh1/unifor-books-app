@@ -197,12 +197,12 @@ private fun CatalogBookCard(book: Book, onClick: () -> Unit) {
     Column(modifier = Modifier.clickable(onClick = onClick)) {
         // FIX: usa BookCoverImage com fallback de erro em vez de AsyncImage direto
         BookCoverImage(
-            capaUrl = book.capaUrl,
-            titulo = book.titulo,
+            url = book.capaUrl,
+            title = book.titulo,
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(0.72f),
-            cornerRadius = 16
+            corner = 16
         )
 
         Spacer(Modifier.height(8.dp))

@@ -4,16 +4,22 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.unifor.booksapp.UniforBooksApp
+import com.unifor.booksapp.data.models.Book
 import com.unifor.booksapp.data.models.Emprestimo
+import com.unifor.booksapp.data.models.EmprestimoComLivro
 import com.unifor.booksapp.data.models.EmprestimoStatus
 import com.unifor.booksapp.data.models.FilaEspera
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class MyLoansData(
-    val emprestimos: List<Emprestimo>,
-    val filaEspera: List<FilaEspera>
+    val emprestimos: List<EmprestimoComLivro>,
+    val filaEspera: List<FilaEspera>,
+    val booksMap: Map<String, Book> = emptyMap()
 )
 
 sealed class MyLoansUiState {
@@ -46,20 +52,53 @@ class MyLoansViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             _uiState.value = MyLoansUiState.Loading
             try {
-                val response = bookRepository.getMeusEmprestimos()
-                if (response.isSuccessful && response.body() != null) {
-                    val body = response.body()!!
-                    _uiState.value = MyLoansUiState.Success(
-                        MyLoansData(
-                            emprestimos = body.emprestimos,
-                            filaEspera = body.filaEspera
-                        )
-                    )
-                } else {
+                val loansResponse = bookRepository.getMeusEmprestimos()
+                if (!loansResponse.isSuccessful || loansResponse.body() == null) {
                     _uiState.value = MyLoansUiState.Error(
-                        response.errorBody()?.string() ?: "Erro ao carregar empréstimos"
+                        loansResponse.errorBody()?.string() ?: "Erro ao carregar empréstimos"
+                    )
+                    return@launch
+                }
+
+                val body = loansResponse.body()!!
+                val emprestimos: List<Emprestimo> = body.emprestimos
+                val filaEspera: List<FilaEspera> = body.filaEspera
+
+                // Busca catálogo para enriquecer empréstimos e fila de espera
+                val booksResponse = bookRepository.getBooks(limit = 100)
+                val allBooks: List<Book> = booksResponse.body()?.data ?: emptyList()
+                val booksById: Map<String, Book> = allBooks.associateBy { it.id }
+
+                // Busca detalhes completos (com exemplares) apenas para livros com cópias emprestadas
+                val booksWithLentCopies = allBooks.filter { it.exemplaresDisponiveis < it.totalExemplares }
+                val exemplarToBook: MutableMap<String, Book> = mutableMapOf()
+                coroutineScope {
+                    booksWithLentCopies.map { book ->
+                        async {
+                            runCatching { bookRepository.getBookById(book.id).body() }
+                                .getOrNull()
+                        }
+                    }.awaitAll().forEach { bookDetail ->
+                        bookDetail?.exemplares?.forEach { exemplar ->
+                            exemplarToBook[exemplar.id] = bookDetail
+                        }
+                    }
+                }
+
+                val enrichedLoans = emprestimos.map { emprestimo ->
+                    EmprestimoComLivro(
+                        emprestimo = emprestimo,
+                        livro = exemplarToBook[emprestimo.exemplarId]
                     )
                 }
+
+                _uiState.value = MyLoansUiState.Success(
+                    MyLoansData(
+                        emprestimos = enrichedLoans,
+                        filaEspera = filaEspera,
+                        booksMap = booksById
+                    )
+                )
             } catch (e: Exception) {
                 _uiState.value = MyLoansUiState.Error(e.message ?: "Erro de conexão")
             }

@@ -7,7 +7,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -29,6 +31,13 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
+
+                // Lê o role atualizado a cada mudança de rota (inclui pós-login)
+                val isAdmin by remember(currentRoute) {
+                    derivedStateOf {
+                        (application as UniforBooksApp).sessionManager.getUserRole() == "ADMIN"
+                    }
+                }
 
                 val hideBottomBarRoutes = setOf(
                     Screen.Login.route,
@@ -53,6 +62,7 @@ class MainActivity : ComponentActivity() {
                         if (showBottomBar) {
                             UniforBottomNavBar(
                                 currentRoute = currentRoute,
+                                isAdmin = isAdmin,
                                 onNavigate = { route ->
                                     navController.navigate(route) {
                                         launchSingleTop = true
@@ -108,10 +118,14 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(Screen.ReportComment.createRoute(commentId))
                                 },
                                 onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
-                                onNavigateToLoanApproved = { navController.navigate(Screen.LoanApproved.route) },
-                                onNavigateToLoanUnavailable = { navController.navigate(Screen.LoanUnavailable.route) },
-                                onNavigateToLoanQueue = { position ->
-                                    navController.navigate(Screen.LoanQueue.createRoute(position))
+                                onNavigateToLoanApproved = { title, author, deadline ->
+                                    navController.navigate(Screen.LoanApproved.createRoute(title, author, deadline))
+                                },
+                                onNavigateToLoanUnavailable = { title, author ->
+                                    navController.navigate(Screen.LoanUnavailable.createRoute(title, author))
+                                },
+                                onNavigateToLoanQueue = { position, title, author ->
+                                    navController.navigate(Screen.LoanQueue.createRoute(position, title, author))
                                 }
                             )
                         }
@@ -180,24 +194,52 @@ class MainActivity : ComponentActivity() {
                         }
 
                         // Loan Status
-                        composable(Screen.LoanApproved.route) {
+                        composable(
+                            route = Screen.LoanApproved.route,
+                            arguments = listOf(
+                                navArgument("title") { type = NavType.StringType; nullable = true; defaultValue = "" },
+                                navArgument("author") { type = NavType.StringType; nullable = true; defaultValue = "" },
+                                navArgument("deadline") { type = NavType.StringType; nullable = true; defaultValue = "" }
+                            )
+                        ) { backStackEntry ->
                             LoanApprovedScreen(
+                                bookTitle = backStackEntry.arguments?.getString("title") ?: "",
+                                bookAuthor = backStackEntry.arguments?.getString("author") ?: "",
+                                pickupDeadline = backStackEntry.arguments?.getString("deadline")?.takeIf { it.isNotEmpty() },
                                 onViewLoans = { navController.navigate(Screen.MyLoans.route) },
                                 onBack = { navController.popBackStack() }
                             )
                         }
-                        composable(Screen.LoanUnavailable.route) {
+                        composable(
+                            route = Screen.LoanUnavailable.route,
+                            arguments = listOf(
+                                navArgument("title") { type = NavType.StringType; nullable = true; defaultValue = "" },
+                                navArgument("author") { type = NavType.StringType; nullable = true; defaultValue = "" }
+                            )
+                        ) { backStackEntry ->
+                            val title = backStackEntry.arguments?.getString("title") ?: ""
+                            val author = backStackEntry.arguments?.getString("author") ?: ""
                             LoanUnavailableScreen(
+                                bookTitle = title,
+                                bookAuthor = author,
                                 onBack = { navController.popBackStack() },
-                                onJoinQueue = { navController.navigate(Screen.LoanQueue.createRoute(3)) }
+                                onJoinQueue = {
+                                    navController.navigate(Screen.LoanQueue.createRoute(1, title, author))
+                                }
                             )
                         }
                         composable(
                             route = Screen.LoanQueue.route,
-                            arguments = listOf(navArgument("position") { type = NavType.IntType })
+                            arguments = listOf(
+                                navArgument("position") { type = NavType.IntType },
+                                navArgument("title") { type = NavType.StringType; nullable = true; defaultValue = "" },
+                                navArgument("author") { type = NavType.StringType; nullable = true; defaultValue = "" }
+                            )
                         ) { backStackEntry ->
                             LoanQueueScreen(
                                 queuePosition = backStackEntry.arguments?.getInt("position"),
+                                bookTitle = backStackEntry.arguments?.getString("title") ?: "",
+                                bookAuthor = backStackEntry.arguments?.getString("author") ?: "",
                                 onBack = { navController.popBackStack() },
                                 onViewLoans = { navController.navigate(Screen.MyLoans.route) }
                             )
@@ -223,6 +265,13 @@ class MainActivity : ComponentActivity() {
                                     )
                                 },
                                 onGoToHome = { navController.navigate(Screen.Home.route) { popUpTo(0) } },
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+
+                        // Admin
+                        composable(Screen.AdminLoansPanel.route) {
+                            AdminLoansPanelScreen(
                                 onBack = { navController.popBackStack() }
                             )
                         }

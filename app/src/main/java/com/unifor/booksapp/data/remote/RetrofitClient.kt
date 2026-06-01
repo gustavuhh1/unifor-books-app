@@ -5,6 +5,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
@@ -17,17 +18,22 @@ object RetrofitClient {
 
         val authInterceptor = okhttp3.Interceptor { chain ->
             val token = sessionManager.getAccessToken()
-            val request = if (token != null) {
-                chain.request().newBuilder()
-                    .addHeader("Authorization", "Bearer $token")
-                    .build()
-            } else {
-                chain.request()
-            }
+            val request = chain.request().newBuilder().apply {
+                addHeader("Accept", "application/json")
+                if (token != null) {
+                    addHeader("Authorization", "Bearer $token")
+                }
+            }.build()
             chain.proceed(request)
         }
 
         val okHttpClient = OkHttpClient.Builder()
+            // Timeouts agressivos para suportar o cold start do Render.com
+            .connectTimeout(90, TimeUnit.SECONDS)
+            .readTimeout(90, TimeUnit.SECONDS)
+            .writeTimeout(90, TimeUnit.SECONDS)
+            .callTimeout(120, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
             .build()

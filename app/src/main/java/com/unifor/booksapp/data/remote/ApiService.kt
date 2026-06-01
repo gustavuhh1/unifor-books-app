@@ -2,6 +2,7 @@ package com.unifor.booksapp.data.remote
 
 import com.unifor.booksapp.data.models.Book
 import com.unifor.booksapp.data.remote.request.LoginRequest
+import com.unifor.booksapp.data.remote.request.NegarEmprestimoRequest
 import com.unifor.booksapp.data.remote.request.SolicitarEmprestimoRequest
 import com.unifor.booksapp.data.remote.response.*
 import retrofit2.Response
@@ -17,8 +18,8 @@ interface ApiService {
     suspend fun logout(@Body body: Map<String, String>): Response<Unit>
 
     // ── Usuário ───────────────────────────────────────────────
-    @GET("usuarios/me")
-    suspend fun getMe(): Response<UsuarioResponse>
+    @GET("users/{id}")
+    suspend fun getUserById(@Path("id") id: String): Response<GetUserByIdResponse>
 
     // ── Books ─────────────────────────────────────────────────
     @GET("books")
@@ -56,6 +57,22 @@ interface ApiService {
 
     @PATCH("emprestimos/{id}/cancelar")
     suspend fun cancelarEmprestimo(@Path("id") id: String): Response<EmprestimoActionResponse>
+
+    // ── Empréstimos (Admin) ───────────────────────────────────
+    @GET("emprestimos")
+    suspend fun getAdminEmprestimos(): Response<AdminEmprestimosResponse>
+
+    @PATCH("emprestimos/{id}/aprovar")
+    suspend fun aprovarEmprestimo(@Path("id") id: String): Response<EmprestimoActionResponse>
+
+    @PATCH("emprestimos/{id}/negar")
+    suspend fun negarEmprestimo(
+        @Path("id") id: String,
+        @Body body: NegarEmprestimoRequest
+    ): Response<EmprestimoActionResponse>
+
+    @PATCH("emprestimos/{id}/entregar")
+    suspend fun entregarEmprestimo(@Path("id") id: String): Response<EmprestimoActionResponse>
 
     // ── Multas ────────────────────────────────────────────────
     @GET("multas/minhas")

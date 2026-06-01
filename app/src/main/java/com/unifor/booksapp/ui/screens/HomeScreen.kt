@@ -4,7 +4,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -13,6 +12,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -20,8 +21,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.unifor.booksapp.R
@@ -29,40 +33,71 @@ import com.unifor.booksapp.data.models.Book
 import com.unifor.booksapp.ui.theme.*
 import com.unifor.booksapp.ui.viewmodels.HomeUiState
 import com.unifor.booksapp.ui.viewmodels.HomeViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
+
+// Cores Extraídas do Código React (Design Pixel-Perfect)
+private val ReactBg = Color(0xFFF8F9FA)
+private val ReactPrimary = Color(0xFF00346F)
+private val ReactSubtitle = Color(0xFF424751)
+private val ReactSearchBg = Color(0xFFE7E8E9)
+private val ReactSearchPlaceholder = Color(0xFFC2C6D3)
+private val ReactCategoryBg = Color(0xFFF3F4F5)
+private val ReactBookCardBg = Color(0xFFEDEEEF)
+private val ReactAvailableBadgeBg = Color(0xFF8AFAA7)
+private val ReactAvailableBadgeText = Color(0xFF007439)
+private val ReactUnavailableBadgeBg = Color(0xFFE6E7E8)
+private val ReactUnavailableBadgeText = Color(0xFF444751)
+private val ReactNewTag = Color(0xFF006D35)
+private val ReactStar = Color(0xFFF3B01F)
 
 @Composable
 fun HomeScreen(
     onNavigateToBookDetails: (String) -> Unit = {},
+    onNavigateToCatalog: () -> Unit = {},
+    onNavigateToLoans: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
     homeViewModel: HomeViewModel = viewModel()
 ) {
     val uiState by homeViewModel.uiState.collectAsState()
 
-    Scaffold(
-        topBar = { HomeTopBar() },
-        containerColor = UniforBackground
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            when (val state = uiState) {
-                is HomeUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-                is HomeUiState.Error -> {
-                    Text(
-                        text = "Erro: ${state.message}",
-                        modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-                is HomeUiState.Success -> {
-                    HomeScreenContent(
-                        books = state.books,
-                        onBookClick = onNavigateToBookDetails
-                    )
+    // Surface raiz com cor explícita para evitar "tela preta" se o tema falhar ou estiver em Dark Mode
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = ReactBg
+    ) {
+        Scaffold(
+            topBar = { HomeTopBar(onNavigateToProfile = onNavigateToProfile) },
+            containerColor = Color.Transparent // Surface já define a cor
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                when (val state = uiState) {
+                    is HomeUiState.Loading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center),
+                            color = ReactPrimary
+                        )
+                    }
+                    is HomeUiState.Error -> {
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("Erro ao carregar livros", color = MaterialTheme.colorScheme.error)
+                            TextButton(onClick = homeViewModel::fetchBooks) {
+                                Text("Tentar novamente", color = ReactPrimary)
+                            }
+                        }
+                    }
+                    is HomeUiState.Success -> {
+                        HomeContent(
+                            books = state.books,
+                            onBookClick = onNavigateToBookDetails,
+                            onNavigateToCatalog = onNavigateToCatalog
+                        )
+                    }
                 }
             }
         }
@@ -70,383 +105,283 @@ fun HomeScreen(
 }
 
 @Composable
-fun HomeScreenContent(
+private fun HomeContent(
     books: List<Book>,
-    onBookClick: (String) -> Unit
+    onBookClick: (String) -> Unit,
+    onNavigateToCatalog: () -> Unit
 ) {
+    val topRated = remember(books) { books.sortedByDescending { it.mediaAvaliacao } }
+    val newReleases = remember(books) { books.sortedByDescending { it.criadoEm } }
+    val discover = remember(books) { books.shuffled().take(2) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .padding(bottom = 32.dp) // Espaçamento extra para não cobrir pela bottom bar
     ) {
-        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-            Spacer(modifier = Modifier.height(24.dp))
-            WelcomeHeader()
-            Spacer(modifier = Modifier.height(32.dp))
-            SearchSection()
-            Spacer(modifier = Modifier.height(48.dp))
-            CategoriesBentoGrid()
-            Spacer(modifier = Modifier.height(48.dp))
-        }
-
-        TopRatedCarousel(books = books, onBookClick = onBookClick)
-
-        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-            Spacer(modifier = Modifier.height(48.dp))
-            DiscoverMoreSection()
-            Spacer(modifier = Modifier.height(48.dp))
-            NewReleasesCarousel(books = books, onBookClick = onBookClick)
-            Spacer(modifier = Modifier.height(120.dp))
-        }
-    }
-}
-
-// ── Capa do livro reutilizável ────────────────────────────────────────────────
-// Exibe a imagem da capa via Coil. Se capaUrl for nula ou falhar no carregamento,
-// exibe um placeholder com as iniciais do título centradas.
-@Composable
-fun BookCoverImage(
-    capaUrl: String?,
-    titulo: String,
-    modifier: Modifier = Modifier,
-    cornerRadius: Int = 12
-) {
-    val shape = RoundedCornerShape(cornerRadius.dp)
-
-    if (capaUrl != null) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(capaUrl)
-                .crossfade(true)
-                .build(),
-            placeholder = painterResource(R.drawable.ic_launcher_background),
-            error = painterResource(R.drawable.ic_launcher_background),
-            contentDescription = "Capa de $titulo",
-            contentScale = ContentScale.Crop,
-            modifier = modifier.clip(shape)
-        )
-    } else {
-        // Fallback: box com as iniciais do título quando não há URL de capa
-        Box(
-            modifier = modifier
-                .clip(shape)
-                .background(UniforSurfaceContainerHigh),
-            contentAlignment = Alignment.Center
-        ) {
+        // ── Cabeçalho (pt-8 px-6) ─────────────────────────────
+        Column(modifier = Modifier.padding(top = 32.dp, start = 24.dp, end = 24.dp)) {
             Text(
-                text = titulo
-                    .split(" ")
-                    .filter { it.isNotBlank() }
-                    .take(2)
-                    .joinToString("") { it.first().uppercase() },
-                fontSize = 22.sp,
+                text = "Página Inicial",
+                fontSize = 36.sp,
                 fontWeight = FontWeight.Black,
-                color = UniforPrimary,
-                textAlign = TextAlign.Center
+                color = ReactPrimary,
+                letterSpacing = (-0.9).sp
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Procure e avalie nossos livros e faça\nseu empréstimo. Sua jornada\nacadêmica começa aqui.",
+                fontSize = 18.sp,
+                color = ReactSubtitle,
+                lineHeight = 29.sp
             )
         }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // ── Barra de Pesquisa (h-[63px] px-6) ─────────────────
+        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+            HomeSearchBar()
+        }
+
+        Spacer(modifier = Modifier.height(48.dp)) // gap-12
+
+        // ── Categorias de Estudo (gap-6) ──────────────────────
+        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+            Text(
+                text = "Categorias de Estudo",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = ReactPrimary
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            CategoriesGrid()
+        }
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        // ── Livros Mais Bem Avaliados ─────────────────────────
+        Column {
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 24.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = "Livros Mais Bem Avaliados",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ReactPrimary
+                )
+                Text(
+                    text = "Ver todos",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = ReactPrimary,
+                    modifier = Modifier.clickable { onNavigateToCatalog() }
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                items(topRated) { book ->
+                    TopRatedBookCard(book = book, onClick = { onBookClick(book.id) })
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        // ── Descubra Mais ─────────────────────────────────────
+        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+            Text(
+                text = "Descubra Mais",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = ReactPrimary
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                discover.forEachIndexed { index, book ->
+                    DiscoverBookItem(
+                        book = book,
+                        subtitle = if (index == 0) "Recomendado com base no seu histórico" 
+                                   else "Livro popular em ${book.categoria}",
+                        onClick = { onBookClick(book.id) }
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        // ── Novidades ─────────────────────────────────────────
+        Column {
+            Text(
+                text = "Novidades",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = ReactPrimary,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(newReleases) { book ->
+                    NewReleaseBookCard(book = book, onClick = { onBookClick(book.id) })
+                }
+            }
+        }
     }
 }
+
+// ─────────────────────────────────────────────────────────────
+// COMPONENTES DE UI (Fidelidade ao React)
+// ─────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeTopBar() {
-    TopAppBar(
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.MenuBook,
-                    contentDescription = null,
-                    tint = UniforPrimary,
-                    modifier = Modifier.size(28.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    "Unifor Books",
-                    fontWeight = FontWeight.Black,
-                    fontSize = 20.sp,
-                    color = UniforPrimary
-                )
-            }
-        },
-        actions = {
-            Box(
-                modifier = Modifier
-                    .padding(end = 16.dp)
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(UniforSurfaceContainerHigh),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = "Perfil",
-                    tint = UniforPrimary,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = UniforBackground.copy(alpha = 0.8f))
-    )
-}
-
-@Composable
-fun WelcomeHeader() {
-    Column {
-        Text(
-            "Página Inicial",
-            fontSize = 36.sp,
-            fontWeight = FontWeight.Black,
-            color = UniforPrimary,
-            letterSpacing = (-1).sp
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            "Procure e avalie nossos livros e faça seu empréstimo. Sua jornada acadêmica começa aqui.",
-            fontSize = 18.sp,
-            color = UniforOutline,
-            lineHeight = 26.sp
-        )
-    }
-}
-
-@Composable
-fun SearchSection() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(72.dp)
-            .background(UniforSurfaceContainerHigh, RoundedCornerShape(16.dp))
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(Icons.Default.Search, contentDescription = null, tint = UniforOutline)
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            "Pesquisar títulos, autores ou ISBN...",
-            modifier = Modifier.weight(1f),
-            color = UniforOutline.copy(alpha = 0.6f)
-        )
-        Button(
-            onClick = { },
-            colors = ButtonDefaults.buttonColors(containerColor = UniforPrimary),
-            shape = RoundedCornerShape(12.dp),
-            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
-        ) {
-            Text("Buscar", fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-fun CategoriesBentoGrid() {
-    Column {
-        Text("Categorias de Estudo", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = UniforPrimary)
-        Spacer(modifier = Modifier.height(24.dp))
-        val categories = listOf(
-            "Computação" to Icons.Default.Computer,
-            "Arquitetura" to Icons.Default.Architecture,
-            "Direito" to Icons.Default.Gavel,
-            "Medicina" to Icons.Default.MedicalServices,
-            "Economia" to Icons.Default.AccountBalance,
-            "Psicologia" to Icons.Default.Psychology
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            for (i in categories.indices step 2) {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    CategoryItem(categories[i].first, categories[i].second, Modifier.weight(1f))
-                    if (i + 1 < categories.size) {
-                        CategoryItem(categories[i + 1].first, categories[i + 1].second, Modifier.weight(1f))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun CategoryItem(label: String, icon: ImageVector, modifier: Modifier = Modifier) {
+fun HomeTopBar(onNavigateToProfile: () -> Unit = {}) {
     Surface(
-        modifier = modifier.height(110.dp),
-        color = Color(0xFFF3F4F5),
-        shape = RoundedCornerShape(20.dp),
-        onClick = { }
+        modifier = Modifier.fillMaxWidth().height(72.dp),
+        color = Color.White.copy(alpha = 0.8f),
+        shadowElevation = 8.dp // Reflete shadow do React
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = UniforPrimary, modifier = Modifier.size(32.dp))
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        }
-    }
-}
-
-@Composable
-fun TopRatedCarousel(
-    books: List<Book>,
-    onBookClick: (String) -> Unit
-) {
-    // Ordena pelo maior mediaAvaliacao para o carrossel de mais bem avaliados
-    val sorted = remember(books) { books.sortedByDescending { it.mediaAvaliacao } }
-
-    Column {
         Row(
-            modifier = Modifier
-                .padding(horizontal = 24.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Livros Mais Bem Avaliados", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = UniforPrimary)
-            Text("Ver todos", color = UniforPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            items(sorted) { book ->
-                BookCard(book = book, onClick = { onBookClick(book.id) })
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Image(painter = painterResource(R.drawable.ic_unifor_logo), contentDescription = null, modifier = Modifier.size(40.dp))
+                Text("Unifor Books", fontSize = 20.sp, fontWeight = FontWeight.Black, color = ReactPrimary, letterSpacing = (-0.5).sp)
+            }
+            Box(
+                modifier = Modifier.size(45.dp).clip(RoundedCornerShape(50)).background(ReactSearchBg).clickable { onNavigateToProfile() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Person, "Perfil", tint = ReactPrimary, modifier = Modifier.size(28.dp))
             }
         }
     }
 }
 
 @Composable
-fun BookCard(
-    book: Book,
-    onClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .width(200.dp)
-            .clickable(onClick = onClick)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(0.75f)
+private fun HomeSearchBar() {
+    Box(modifier = Modifier.fillMaxWidth().height(63.dp)) {
+        Box(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)).background(ReactSearchBg))
+        Row(
+            modifier = Modifier.fillMaxSize().padding(start = 16.dp, end = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // FIX Bug 2 & 3: usa BookCoverImage com fallback de erro e sem divisão da nota
-            BookCoverImage(
-                capaUrl = book.capaUrl,
-                titulo = book.titulo,
-                modifier = Modifier.fillMaxSize(),
-                cornerRadius = 20
-            )
+            Icon(Icons.Default.Search, null, tint = Color(0xFF737783), modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(12.dp))
+            Text("Pesquisar títulos, autores ou ISBN...", fontSize = 16.sp, color = ReactSearchPlaceholder, modifier = Modifier.weight(1f))
+            Button(
+                onClick = { },
+                modifier = Modifier.height(40.dp),
+                shape = RoundedCornerShape(4.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = ReactPrimary),
+                contentPadding = PaddingValues(horizontal = 20.dp)
+            ) {
+                Text("Buscar", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+            }
+        }
+    }
+}
 
+@Composable
+private fun CategoriesGrid() {
+    val cats = listOf(
+        "Computação" to Icons.Default.Computer, "Arquitetura" to Icons.Default.Architecture,
+        "Direito" to Icons.Default.Gavel, "Medicina" to Icons.Default.MedicalServices,
+        "Economia" to Icons.Default.AccountBalance, "Psicologia" to Icons.Default.Psychology
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        for (i in cats.indices step 2) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                CategoryItem(cats[i].first, cats[i].second, Modifier.weight(1f))
+                if (i + 1 < cats.size) CategoryItem(cats[i+1].first, cats[i+1].second, Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryItem(label: String, icon: ImageVector, modifier: Modifier) {
+    Surface(modifier = modifier.height(108.dp), color = ReactCategoryBg, shape = RoundedCornerShape(8.dp), onClick = {}) {
+        Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Icon(icon, null, tint = ReactPrimary, modifier = Modifier.size(28.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF191C1D))
+        }
+    }
+}
+
+@Composable
+private fun TopRatedBookCard(book: Book, onClick: () -> Unit) {
+    Column(modifier = Modifier.width(200.dp).clickable { onClick() }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().height(267.dp).clip(RoundedCornerShape(8.dp)).background(ReactBookCardBg)) {
+            BookCoverImage(book.capaUrl, book.titulo, Modifier.fillMaxSize(), 8)
+            val avail = book.exemplaresDisponiveis > 0
             Surface(
-                modifier = Modifier
-                    .padding(12.dp)
-                    .align(Alignment.TopEnd),
-                color = if (book.exemplaresDisponiveis > 0) UniforSecondaryContainer else Color.LightGray,
-                shape = RoundedCornerShape(6.dp)
+                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                color = if (avail) ReactAvailableBadgeBg else ReactUnavailableBadgeBg,
+                shape = RoundedCornerShape(2.dp)
             ) {
                 Text(
-                    if (book.exemplaresDisponiveis > 0) "DISPONÍVEL" else "INDISPONÍVEL",
+                    text = if (avail) "DISPONÍVEL" else "INDISPONÍVEL",
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Black,
-                    color = UniforOnSecondaryContainer
+                    fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                    color = if (avail) ReactAvailableBadgeText else ReactUnavailableBadgeText,
+                    letterSpacing = 0.5.sp
                 )
             }
         }
+        Text(book.titulo, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF191C1D), maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(book.autor, fontSize = 12.sp, color = ReactSubtitle, maxLines = 1)
+        Row { repeat(5) { i -> Icon(Icons.Default.Star, null, tint = ReactStar, modifier = Modifier.size(12.dp)) } }
+    }
+}
 
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(book.titulo, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1)
-        Text(book.autor, color = UniforOutline, fontSize = 13.sp, maxLines = 1)
-
-        // FIX Bug 2: mediaAvaliacao já é escala 0–5, não dividir por 2
-        Row(modifier = Modifier.padding(top = 4.dp)) {
-            val rating = book.mediaAvaliacao.toFloat()
-            val fullStars = rating.toInt()
-            val hasHalf = (rating - fullStars) >= 0.3f
-            val emptyStars = (5 - fullStars - if (hasHalf) 1 else 0).coerceAtLeast(0)
-
-            repeat(fullStars) {
-                Icon(Icons.Default.Star, null, tint = UniforTertiaryFixed, modifier = Modifier.size(16.dp))
-            }
-            if (hasHalf) {
-                Icon(Icons.Default.StarHalf, null, tint = UniforTertiaryFixed, modifier = Modifier.size(16.dp))
-            }
-            repeat(emptyStars) {
-                Icon(Icons.Default.StarBorder, null, tint = UniforTertiaryFixed, modifier = Modifier.size(16.dp))
+@Composable
+private fun DiscoverBookItem(book: Book, subtitle: String, onClick: () -> Unit) {
+    Surface(modifier = Modifier.fillMaxWidth().clickable { onClick() }, color = ReactCategoryBg, shape = RoundedCornerShape(8.dp)) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            BookCoverImage(book.capaUrl, book.titulo, Modifier.size(64.dp, 80.dp), 4)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(book.titulo, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF191C1D), maxLines = 1)
+                Text(subtitle, fontSize = 12.sp, color = ReactSubtitle, maxLines = 2)
             }
         }
     }
 }
 
 @Composable
-fun DiscoverMoreSection() {
-    Column {
-        Text("Descubra Mais", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = UniforPrimary)
-        Spacer(modifier = Modifier.height(24.dp))
-        repeat(2) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                color = Color(0xFFF3F4F5),
-                shape = RoundedCornerShape(20.dp),
-                onClick = { }
-            ) {
-                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(60.dp, 80.dp)
-                            .background(UniforOutline.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text("Marketing Estratégico", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                        Text("Recomendado com base no seu histórico", fontSize = 12.sp, color = UniforOutline)
-                    }
-                }
-            }
+private fun NewReleaseBookCard(book: Book, onClick: () -> Unit) {
+    Column(modifier = Modifier.width(140.dp).clickable { onClick() }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().height(187.dp).clip(RoundedCornerShape(4.dp)).background(ReactBookCardBg)) {
+            BookCoverImage(book.capaUrl, book.titulo, Modifier.fillMaxSize(), 4)
         }
+        Text("RECÉM CHEGADO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ReactNewTag)
+        Text(book.titulo, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF191C1D), maxLines = 1)
     }
 }
 
 @Composable
-fun NewReleasesCarousel(
-    books: List<Book>,
-    onBookClick: (String) -> Unit
-) {
-    // Ordena pelos mais recentes (criadoEm decrescente)
-    val sorted = remember(books) { books.sortedByDescending { it.criadoEm } }
-
-    Column {
-        Text("Novidades", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = UniforPrimary)
-        Spacer(modifier = Modifier.height(24.dp))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            items(sorted) { book ->
-                Column(
-                    modifier = Modifier
-                        .width(140.dp)
-                        .clickable { onBookClick(book.id) }
-                ) {
-                    // FIX Bug 3: BookCoverImage com fallback de erro
-                    BookCoverImage(
-                        capaUrl = book.capaUrl,
-                        titulo = book.titulo,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(0.75f),
-                        cornerRadius = 12
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "RECÉM CHEGADO",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = UniforSecondary
-                    )
-                    Text(book.titulo, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1)
-                }
-            }
-        }
-    }
+fun BookCoverImage(url: String?, title: String, modifier: Modifier, corner: Int) {
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current).data(url).crossfade(true).build(),
+        contentDescription = title,
+        contentScale = ContentScale.Crop,
+        modifier = modifier.clip(RoundedCornerShape(corner.dp)),
+        error = painterResource(R.drawable.ic_launcher_background)
+    )
 }

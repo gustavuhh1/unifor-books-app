@@ -1,62 +1,52 @@
 package com.unifor.booksapp.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 
+// Mantemos as definições, mas por enquanto o App focará no Light Mode 
+// para garantir 100% de fidelidade ao protótipo React fornecido.
 private val DarkColorScheme = darkColorScheme(
-    primary = UniforBlue,
-    secondary = DarkTextSecondary,
-    tertiary = UniforOrange,
-    background = DarkBackground,
-    surface = DarkSurface,
+    primary = UniforPrimary,
+    secondary = UniforOutline,
+    tertiary = UniforTertiary,
+    background = UniforBackground, // Usando fundo claro mesmo no Dark para evitar tela preta
+    surface = UniforSurface,
     onPrimary = Color.White,
     onSecondary = Color.White,
     onTertiary = Color.White,
-    onBackground = DarkTextPrimary,
-    onSurface = DarkTextPrimary,
-    outline = DarkTextSecondary
+    onBackground = UniforOnSurface,
+    onSurface = UniforOnSurface,
+    outline = UniforOutline
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = UniforBlue,
-    secondary = UniforTextGray,
-    tertiary = Pink40,
-    background = Color.White,
-    surface = UniforLightGray,
+    primary = UniforPrimary,
+    secondary = UniforOutline,
+    tertiary = UniforTertiary,
+    background = UniforBackground, // #F8F9FA
+    surface = UniforSurface,       // #FFFFFF
     onPrimary = Color.White,
-    onSecondary = Color.Black,
+    onSecondary = Color.White,
     onTertiary = Color.White,
-    onBackground = Color.Black,
-    onSurface = Color.Black,
-    outline = UniforTextGray
+    onBackground = UniforOnSurface,
+    onSurface = UniforOnSurface,
+    outline = UniforOutline
 )
 
 @Composable
 fun UniforBooksAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    // Disabled by default to use Unifor custom colors
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    // IMPORTANTE: Forçamos LightColorScheme para alinhar com o design React.
+    // Se quiser habilitar Dark Mode no futuro, basta voltar para:
+    // val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val colorScheme = LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

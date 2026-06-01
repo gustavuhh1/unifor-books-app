@@ -2,6 +2,11 @@ package com.unifor.booksapp.data.models
 
 import com.google.gson.annotations.SerializedName
 
+data class EmprestimoComLivro(
+    val emprestimo: Emprestimo,
+    val livro: Book? = null
+)
+
 data class Emprestimo(
     @SerializedName("id") val id: String,
     @SerializedName("usuarioId") val usuarioId: String,

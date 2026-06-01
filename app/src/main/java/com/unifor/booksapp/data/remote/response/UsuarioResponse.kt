@@ -11,3 +11,8 @@ data class UsuarioResponse(
     @SerializedName("role") val role: UserRole,
     @SerializedName("criadoEm") val criadoEm: String? = null
 )
+
+// GET /users/{id} retorna { "user": { ... } }
+data class GetUserByIdResponse(
+    @SerializedName("user") val user: UsuarioResponse
+)

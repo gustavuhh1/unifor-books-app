@@ -1,6 +1,7 @@
 package com.unifor.booksapp
 
 import android.app.Application
+import com.unifor.booksapp.data.AdminRepository
 import com.unifor.booksapp.data.AuthRepository
 import com.unifor.booksapp.data.BookRepository
 import com.unifor.booksapp.data.remote.RetrofitClient
@@ -15,4 +16,6 @@ class UniforBooksApp : Application() {
     val authRepository by lazy { AuthRepository(apiService, sessionManager) }
 
     val bookRepository by lazy { BookRepository(apiService) }
+
+    val adminRepository by lazy { AdminRepository(apiService) }
 }

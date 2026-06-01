@@ -17,13 +17,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.unifor.booksapp.data.models.Emprestimo
+import com.unifor.booksapp.data.models.Book
+import com.unifor.booksapp.data.models.EmprestimoComLivro
 import com.unifor.booksapp.data.models.EmprestimoStatus
 import com.unifor.booksapp.data.models.FilaEspera
 import com.unifor.booksapp.ui.theme.*
@@ -99,6 +101,7 @@ fun MyLoansScreen(
                     MyLoansContent(
                         emprestimos = state.data.emprestimos,
                         filaEspera = state.data.filaEspera,
+                        booksMap = state.data.booksMap,
                         renovacaoLoading = renovacaoState is RenovacaoUiState.Loading,
                         onNavigateToFines = onNavigateToFines,
                         onRenovar = { myLoansViewModel.renovarEmprestimo(it) }
@@ -111,22 +114,23 @@ fun MyLoansScreen(
 
 @Composable
 private fun MyLoansContent(
-    emprestimos: List<Emprestimo>,
+    emprestimos: List<EmprestimoComLivro>,
     filaEspera: List<FilaEspera>,
+    booksMap: Map<String, Book>,
     renovacaoLoading: Boolean,
     onNavigateToFines: () -> Unit,
     onRenovar: (String) -> Unit
 ) {
     val ativos = emprestimos.filter {
-        it.status in listOf(
+        it.emprestimo.status in listOf(
             EmprestimoStatus.APROVADO,
             EmprestimoStatus.ATRASADO,
             EmprestimoStatus.PENDENTE
         )
     }
-    val onTimeCount = emprestimos.count { it.status == EmprestimoStatus.APROVADO }
-    val lateCount = emprestimos.count { it.status == EmprestimoStatus.ATRASADO }
-    val pendingCount = emprestimos.count { it.status == EmprestimoStatus.PENDENTE }
+    val onTimeCount = emprestimos.count { it.emprestimo.status == EmprestimoStatus.APROVADO }
+    val lateCount = emprestimos.count { it.emprestimo.status == EmprestimoStatus.ATRASADO }
+    val pendingCount = emprestimos.count { it.emprestimo.status == EmprestimoStatus.PENDENTE }
     val queueCount = filaEspera.size
 
     Column(
@@ -165,11 +169,11 @@ private fun MyLoansContent(
             }
         }
 
-        ativos.forEach { emprestimo ->
+        ativos.forEach { emprestimoComLivro ->
             EmprestimoCard(
-                emprestimo = emprestimo,
+                emprestimoComLivro = emprestimoComLivro,
                 renovacaoLoading = renovacaoLoading,
-                onRenovar = { onRenovar(emprestimo.id) }
+                onRenovar = { onRenovar(emprestimoComLivro.emprestimo.id) }
             )
             Spacer(Modifier.height(16.dp))
         }
@@ -178,7 +182,7 @@ private fun MyLoansContent(
             Text("Na Fila de Espera", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = UniforPrimary)
             Spacer(Modifier.height(12.dp))
             filaEspera.forEach { fila ->
-                FilaEsperaCard(fila = fila)
+                FilaEsperaCard(fila = fila, livro = booksMap[fila.livroId])
                 Spacer(Modifier.height(12.dp))
             }
         }
@@ -297,10 +301,13 @@ private fun FinesCard(onClick: () -> Unit) {
 
 @Composable
 private fun EmprestimoCard(
-    emprestimo: Emprestimo,
+    emprestimoComLivro: EmprestimoComLivro,
     renovacaoLoading: Boolean,
     onRenovar: () -> Unit
 ) {
+    val emprestimo = emprestimoComLivro.emprestimo
+    val livro = emprestimoComLivro.livro
+
     val (statusLabel, statusColor, statusIcon) = when (emprestimo.status) {
         EmprestimoStatus.APROVADO -> Triple("EM DIA", UniforSuccess, Icons.Default.CheckCircle)
         EmprestimoStatus.ATRASADO -> Triple("ATRASADO", UniforError, Icons.Default.Error)
@@ -328,29 +335,45 @@ private fun EmprestimoCard(
             }
             Spacer(Modifier.height(12.dp))
             Row {
-                Box(
-                    Modifier
+                BookCoverImage(
+                    url = livro?.capaUrl,
+                    title = livro?.titulo ?: "",
+                    modifier = Modifier
                         .size(80.dp, 110.dp)
-                        .background(UniforSurfaceContainerHigh, RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(8.dp)),
+                    corner = 8
                 )
                 Spacer(Modifier.width(16.dp))
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "Exemplar #${emprestimo.exemplarId.takeLast(6)}",
+                        text = livro?.titulo ?: "Carregando...",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontSize = 16.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
+                    if (livro != null) {
+                        Text(
+                            text = livro.autor,
+                            color = UniforOutline,
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
                     Text(
                         "Solicitado em ${emprestimo.dataSolicitacao.take(10)}",
                         color = UniforOutline,
-                        fontSize = 13.sp
+                        fontSize = 12.sp
                     )
-                    Spacer(Modifier.height(8.dp))
                     if (emprestimo.dataDevolucaoPrevista != null) {
+                        Spacer(Modifier.height(4.dp))
                         Text(
                             "Devolução: ${emprestimo.dataDevolucaoPrevista.take(10)}",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
+                            fontSize = 13.sp,
+                            color = if (emprestimo.status == EmprestimoStatus.ATRASADO) UniforError else UniforPrimary
                         )
                     }
                 }
@@ -377,7 +400,7 @@ private fun EmprestimoCard(
 }
 
 @Composable
-private fun FilaEsperaCard(fila: FilaEspera) {
+private fun FilaEsperaCard(fila: FilaEspera, livro: Book?) {
     Surface(shape = RoundedCornerShape(16.dp), color = UniforSurface, shadowElevation = 1.dp) {
         Row(
             modifier = Modifier
@@ -400,9 +423,17 @@ private fun FilaEsperaCard(fila: FilaEspera) {
                 )
             }
             Spacer(Modifier.width(16.dp))
-            Column {
-                Text("Livro ID: ${fila.livroId.takeLast(8)}", fontWeight = FontWeight.Bold)
-                Text("Posição na fila: ${fila.posicao}", color = UniforOutline, fontSize = 13.sp)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = livro?.titulo ?: "Livro ID: ${fila.livroId.takeLast(8)}",
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (livro != null) {
+                    Text(livro.autor, color = UniforOutline, fontSize = 13.sp, maxLines = 1)
+                }
+                Text("Posição na fila: ${fila.posicao}", color = UniforOutline, fontSize = 12.sp)
                 Text("Status: ${fila.status}", color = UniforOutline, fontSize = 12.sp)
             }
         }

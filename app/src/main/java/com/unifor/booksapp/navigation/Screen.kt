@@ -1,5 +1,7 @@
 package com.unifor.booksapp.navigation
 
+import android.net.Uri
+
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Home : Screen("home")
@@ -14,10 +16,17 @@ sealed class Screen(val route: String) {
     object ChangePasswordSuccess : Screen("profile/change-password/success")
 
     // Telas de status de empréstimo
-    object LoanApproved : Screen("loan/approved")
-    object LoanUnavailable : Screen("loan/unavailable")
-    object LoanQueue : Screen("loan/queue/{position}") {
-        fun createRoute(position: Int) = "loan/queue/$position"
+    object LoanApproved : Screen("loan/approved?title={title}&author={author}&deadline={deadline}") {
+        fun createRoute(title: String, author: String, deadline: String = "") =
+            "loan/approved?title=${Uri.encode(title)}&author=${Uri.encode(author)}&deadline=${Uri.encode(deadline)}"
+    }
+    object LoanUnavailable : Screen("loan/unavailable?title={title}&author={author}") {
+        fun createRoute(title: String, author: String) =
+            "loan/unavailable?title=${Uri.encode(title)}&author=${Uri.encode(author)}"
+    }
+    object LoanQueue : Screen("loan/queue/{position}?title={title}&author={author}") {
+        fun createRoute(position: Int, title: String = "", author: String = "") =
+            "loan/queue/$position?title=${Uri.encode(title)}&author=${Uri.encode(author)}"
     }
 
     // Telas de denúncia de comentário
@@ -31,4 +40,7 @@ sealed class Screen(val route: String) {
     object FinesPolicy : Screen("fines")
     object RenewalAvailable : Screen("renewal/available")
     object RenewalUnavailable : Screen("renewal/unavailable")
+
+    // Telas Admin
+    object AdminLoansPanel : Screen("admin/emprestimos")
 }

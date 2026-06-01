@@ -19,8 +19,20 @@ sealed class BookDetailUiState {
 sealed class EmprestimoUiState {
     object Idle : EmprestimoUiState()
     object Loading : EmprestimoUiState()
-    data class NaFila(val posicao: Int) : EmprestimoUiState()
-    object Indisponivel : EmprestimoUiState()
+    data class Aprovado(
+        val bookTitle: String,
+        val bookAuthor: String,
+        val prazoRetirada: String?
+    ) : EmprestimoUiState()
+    data class NaFila(
+        val posicao: Int,
+        val bookTitle: String,
+        val bookAuthor: String
+    ) : EmprestimoUiState()
+    data class Indisponivel(
+        val bookTitle: String,
+        val bookAuthor: String
+    ) : EmprestimoUiState()
     data class Error(val message: String) : EmprestimoUiState()
 }
 
@@ -38,6 +50,9 @@ class BookDetailViewModel(application: Application) : AndroidViewModel(applicati
 
     private val bookRepository = (application as UniforBooksApp).bookRepository
 
+    private var currentBookId = ""
+    private var currentPage = 1
+
     private val _bookState = MutableStateFlow<BookDetailUiState>(BookDetailUiState.Loading)
     val bookState = _bookState.asStateFlow()
 
@@ -48,6 +63,8 @@ class BookDetailViewModel(application: Application) : AndroidViewModel(applicati
     val avaliacoesState = _avaliacoesState.asStateFlow()
 
     fun loadBook(bookId: String) {
+        currentBookId = bookId
+        currentPage = 1
         viewModelScope.launch {
             _bookState.value = BookDetailUiState.Loading
             try {
@@ -70,7 +87,7 @@ class BookDetailViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             _avaliacoesState.value = AvaliacoesUiState.Loading
             try {
-                val response = bookRepository.getAvaliacoes(bookId, limit = 5)
+                val response = bookRepository.getAvaliacoes(bookId, page = currentPage, limit = 5)
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
                     _avaliacoesState.value = AvaliacoesUiState.Success(
@@ -89,7 +106,10 @@ class BookDetailViewModel(application: Application) : AndroidViewModel(applicati
 
     fun solicitarEmprestimo(book: Book) {
         if (book.exemplaresDisponiveis <= 0) {
-            _emprestimoState.value = EmprestimoUiState.Indisponivel
+            _emprestimoState.value = EmprestimoUiState.Indisponivel(
+                bookTitle = book.titulo,
+                bookAuthor = book.autor
+            )
             return
         }
         viewModelScope.launch {
@@ -98,8 +118,29 @@ class BookDetailViewModel(application: Application) : AndroidViewModel(applicati
                 val response = bookRepository.solicitarEmprestimo(book.id)
                 when {
                     response.isSuccessful -> {
-                        val posicao = response.body()?.fila?.posicao ?: 1
-                        _emprestimoState.value = EmprestimoUiState.NaFila(posicao)
+                        val body = response.body()
+                        when {
+                            body?.emprestimo != null -> {
+                                _emprestimoState.value = EmprestimoUiState.Aprovado(
+                                    bookTitle = book.titulo,
+                                    bookAuthor = book.autor,
+                                    prazoRetirada = body.emprestimo.dataDevolucaoPrevista
+                                )
+                            }
+                            body?.fila != null -> {
+                                _emprestimoState.value = EmprestimoUiState.NaFila(
+                                    posicao = body.fila.posicao,
+                                    bookTitle = book.titulo,
+                                    bookAuthor = book.autor
+                                )
+                            }
+                            else -> {
+                                _emprestimoState.value = EmprestimoUiState.Indisponivel(
+                                    bookTitle = book.titulo,
+                                    bookAuthor = book.autor
+                                )
+                            }
+                        }
                     }
                     else -> {
                         _emprestimoState.value = EmprestimoUiState.Error(
@@ -110,6 +151,26 @@ class BookDetailViewModel(application: Application) : AndroidViewModel(applicati
             } catch (e: Exception) {
                 _emprestimoState.value = EmprestimoUiState.Error(e.message ?: "Erro de conexão")
             }
+        }
+    }
+
+    fun loadMoreAvaliacoes() {
+        if (currentBookId.isEmpty()) return
+        val nextPage = currentPage + 1
+        viewModelScope.launch {
+            try {
+                val response = bookRepository.getAvaliacoes(currentBookId, page = nextPage, limit = 5)
+                if (response.isSuccessful && response.body() != null) {
+                    val body = response.body()!!
+                    val current = _avaliacoesState.value
+                    if (current is AvaliacoesUiState.Success) {
+                        currentPage = nextPage
+                        _avaliacoesState.value = current.copy(
+                            avaliacoes = current.avaliacoes + body.avaliacoes
+                        )
+                    }
+                }
+            } catch (_: Exception) { /* keep existing state, button stays visible */ }
         }
     }
 

@@ -1,5 +1,6 @@
 package com.unifor.booksapp.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,14 +10,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.StarHalf
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,9 +40,9 @@ fun BookDetailScreen(
     onBack: () -> Unit,
     onReportComment: (String) -> Unit = {},
     onNavigateToProfile: () -> Unit,
-    onNavigateToLoanApproved: () -> Unit = {},
-    onNavigateToLoanUnavailable: () -> Unit = {},
-    onNavigateToLoanQueue: (Int) -> Unit = {},
+    onNavigateToLoanApproved: (title: String, author: String, deadline: String) -> Unit = { _, _, _ -> },
+    onNavigateToLoanUnavailable: (title: String, author: String) -> Unit = { _, _ -> },
+    onNavigateToLoanQueue: (position: Int, title: String, author: String) -> Unit = { _, _, _ -> },
     bookDetailViewModel: BookDetailViewModel = viewModel()
 ) {
     val bookState by bookDetailViewModel.bookState.collectAsState()
@@ -53,13 +55,17 @@ fun BookDetailScreen(
 
     LaunchedEffect(emprestimoState) {
         when (val state = emprestimoState) {
+            is EmprestimoUiState.Aprovado -> {
+                bookDetailViewModel.resetEmprestimoState()
+                onNavigateToLoanApproved(state.bookTitle, state.bookAuthor, state.prazoRetirada ?: "")
+            }
             is EmprestimoUiState.NaFila -> {
                 bookDetailViewModel.resetEmprestimoState()
-                onNavigateToLoanQueue(state.posicao)
+                onNavigateToLoanQueue(state.posicao, state.bookTitle, state.bookAuthor)
             }
             is EmprestimoUiState.Indisponivel -> {
                 bookDetailViewModel.resetEmprestimoState()
-                onNavigateToLoanUnavailable()
+                onNavigateToLoanUnavailable(state.bookTitle, state.bookAuthor)
             }
             else -> Unit
         }
@@ -100,7 +106,8 @@ fun BookDetailScreen(
                         avaliacoesState = avaliacoesState,
                         emprestimoLoading = emprestimoState is EmprestimoUiState.Loading,
                         onSolicitarEmprestimo = { bookDetailViewModel.solicitarEmprestimo(state.book) },
-                        onReportComment = onReportComment
+                        onReportComment = onReportComment,
+                        onLoadMoreComments = { bookDetailViewModel.loadMoreAvaliacoes() }
                     )
                 }
             }
@@ -114,113 +121,29 @@ private fun BookDetailContent(
     avaliacoesState: AvaliacoesUiState,
     emprestimoLoading: Boolean,
     onSolicitarEmprestimo: () -> Unit,
-    onReportComment: (String) -> Unit
+    onReportComment: (String) -> Unit,
+    onLoadMoreComments: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(32.dp)
     ) {
-        // ── Capa do livro ─────────────────────────────────────
-        // FIX: BookCoverImage reutilizável — trata capaUrl nula e erro de carregamento
-        BookCoverImage(
-            capaUrl = book.capaUrl,
-            titulo = book.titulo,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(260.dp),
-            cornerRadius = 0
-        )
-
-        // ── Conteúdo principal ────────────────────────────────
-        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Badge disponibilidade
-            AvailabilityBadge(available = book.exemplaresDisponiveis > 0)
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Título
-            Text(
-                text = book.titulo,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Black,
-                color = UniforPrimary,
-                lineHeight = 32.sp
+        // Cover + info block (matches React inline-grid section)
+        Column {
+            BookCoverSection(url = book.capaUrl, title = book.titulo)
+            Spacer(modifier = Modifier.height(48.dp))
+            BookInfoBlock(
+                book = book,
+                avaliacoesState = avaliacoesState,
+                emprestimoLoading = emprestimoLoading,
+                onSolicitarEmprestimo = onSolicitarEmprestimo
             )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Autor
-            Text(
-                text = book.autor,
-                fontSize = 15.sp,
-                color = UniforOutline
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Card de estatísticas (nota, avaliações, exemplares, páginas)
-            StatsCard(book = book, avaliacoesState = avaliacoesState)
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Descrição
-            Text(
-                text = "Descrição da Obra",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = UniforPrimary
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = book.sinopse ?: "Sem descrição disponível.",
-                fontSize = 15.sp,
-                color = Color(0xFF444444),
-                lineHeight = 22.sp
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Informações do livro (categoria, editora, ano, idioma)
-            BookInfoSection(book = book)
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Botão empréstimo
-            Button(
-                onClick = onSolicitarEmprestimo,
-                enabled = !emprestimoLoading && book.exemplaresDisponiveis > 0,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = UniforPrimary)
-            ) {
-                if (emprestimoLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text(
-                        "Solicitar Empréstimo",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
         }
 
-        // ── Análise de Leitura ────────────────────────────────
-        HorizontalDivider(color = UniforOutline.copy(alpha = 0.1f))
-        Spacer(modifier = Modifier.height(24.dp))
-
+        // Análise de Leitura + Comentários
         when (val state = avaliacoesState) {
             is AvaliacoesUiState.Success -> {
                 if (state.total > 0) {
@@ -229,19 +152,17 @@ private fun BookDetailContent(
                         total = state.total,
                         avaliacoes = state.avaliacoes
                     )
-                    Spacer(modifier = Modifier.height(28.dp))
                     CommentsSection(
                         avaliacoes = state.avaliacoes,
                         total = state.total,
-                        onReportComment = onReportComment
+                        onReportComment = onReportComment,
+                        onLoadMore = onLoadMoreComments
                     )
                 }
             }
             is AvaliacoesUiState.Loading -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp))
@@ -249,23 +170,122 @@ private fun BookDetailContent(
             }
             else -> Unit
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(48.dp))
+@Composable
+private fun BookCoverSection(url: String?, title: String) {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        // Decorative circle behind cover (React: absolute -left-4 -top-4, size 352dp, opacity 50% #00346F/5%)
+        Box(
+            modifier = Modifier
+                .offset(x = (-16).dp, y = (-16).dp)
+                .size(352.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(UniforPrimary.copy(alpha = 0.05f))
+        )
+        BookCoverImage(
+            url = url,
+            title = title,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(320.dp)
+                .shadow(elevation = 16.dp, shape = RoundedCornerShape(8.dp), clip = false)
+                .clip(RoundedCornerShape(8.dp)),
+            corner = 8
+        )
+    }
+}
+
+@Composable
+private fun BookInfoBlock(
+    book: Book,
+    avaliacoesState: AvaliacoesUiState,
+    emprestimoLoading: Boolean,
+    onSolicitarEmprestimo: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(32.dp)) {
+        // Badge + title + author (gap-2 = 8dp, title has pt-2 extra)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            AvailabilityBadge(available = book.exemplaresDisponiveis > 0)
+            Text(
+                text = book.titulo,
+                modifier = Modifier.padding(top = 8.dp),
+                fontSize = 36.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = UniforPrimary,
+                lineHeight = 45.sp
+            )
+            Text(
+                text = book.autor,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF424751)
+            )
+        }
+
+        StatsCard(book = book, avaliacoesState = avaliacoesState)
+
+        // Description (gap-4 = 16dp, pb-4 = 16dp bottom)
+        Column(
+            modifier = Modifier.padding(bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Descrição do Obra",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF191C1D)
+            )
+            Text(
+                text = book.sinopse ?: "Sem descrição disponível.",
+                fontSize = 18.sp,
+                color = Color(0xFF424751),
+                lineHeight = 29.sp
+            )
+        }
+
+        // Solicitar Empréstimo button (py-4 = ~60dp total height, rounded-lg = 8dp)
+        Button(
+            onClick = onSolicitarEmprestimo,
+            enabled = !emprestimoLoading && book.exemplaresDisponiveis > 0,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp),
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = UniforPrimary)
+        ) {
+            if (emprestimoLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text(
+                    text = "Solicitar Empréstimo",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+        }
     }
 }
 
 @Composable
 private fun AvailabilityBadge(available: Boolean) {
+    // rounded-xl = 12dp, py-1 px-3 = 4dp 12dp
     Surface(
-        color = if (available) Color(0xFFB8F5C8) else Color(0xFFE0E0E0),
-        shape = RoundedCornerShape(50.dp)
+        color = if (available) UniforSecondaryContainer else Color(0xFFE0E0E0),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Text(
             text = if (available) "DISPONÍVEL" else "INDISPONÍVEL",
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (available) Color(0xFF1A6B35) else Color(0xFF5A5A5A)
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = if (available) UniforOnSecondaryContainer else Color(0xFF5A5A5A)
         )
     }
 }
@@ -277,226 +297,176 @@ private fun StatsCard(book: Book, avaliacoesState: AvaliacoesUiState) {
         else -> null
     }
 
+    // rounded-2xl = 16dp, py-[22px] px-4, gap-5 = 20dp between columns
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFF3F4F5),
+        color = Color.White,
+        shadowElevation = 2.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 22.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Estrelas + nota média
-            Column(modifier = Modifier.weight(1f)) {
+            // Stars (20dp each) + "4.5 / 5.0" below
+            Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val rating = book.mediaAvaliacao.toFloat()
                     val fullStars = rating.toInt()
                     val hasHalf = (rating - fullStars) >= 0.3f
                     val emptyStars = (5 - fullStars - if (hasHalf) 1 else 0).coerceAtLeast(0)
                     repeat(fullStars) {
-                        Icon(Icons.Default.Star, null, tint = UniforTertiaryFixed, modifier = Modifier.size(15.dp))
+                        Icon(Icons.Default.Star, null, tint = UniforTertiaryFixed, modifier = Modifier.size(20.dp))
                     }
                     if (hasHalf) {
-                        Icon(Icons.Default.StarHalf, null, tint = UniforTertiaryFixed, modifier = Modifier.size(15.dp))
+                        Icon(Icons.AutoMirrored.Filled.StarHalf, null, tint = UniforTertiaryFixed, modifier = Modifier.size(20.dp))
                     }
                     repeat(emptyStars) {
-                        Icon(Icons.Default.StarBorder, null, tint = UniforTertiaryFixed, modifier = Modifier.size(15.dp))
+                        Icon(Icons.Default.StarBorder, null, tint = UniforTertiaryFixed, modifier = Modifier.size(20.dp))
                     }
                 }
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "%.1f / 5.0".format(book.mediaAvaliacao),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = UniforOutline
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF191C1D)
                 )
             }
 
-            VerticalDivider(modifier = Modifier.height(36.dp), color = UniforOutline.copy(alpha = 0.2f))
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Avaliações (popularidade)
-            Column(horizontalAlignment = Alignment.Start) {
+            // AVALIAÇÕES label + count
+            Column {
                 Text(
                     text = "AVALIAÇÕES",
-                    fontSize = 9.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = UniforOutline,
-                    letterSpacing = 0.5.sp
+                    color = Color(0xFF424751),
+                    letterSpacing = 0.6.sp
                 )
                 Text(
                     text = totalAvaliacoes?.toString() ?: "—",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Black,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
                     color = UniforPrimary
                 )
             }
 
-            // Exemplares no acervo
-            if (book.totalExemplares > 0) {
-                Spacer(modifier = Modifier.width(16.dp))
-                VerticalDivider(modifier = Modifier.height(36.dp), color = UniforOutline.copy(alpha = 0.2f))
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column(horizontalAlignment = Alignment.Start) {
-                    Text(
-                        text = "EXEMPLARES",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = UniforOutline,
-                        letterSpacing = 0.5.sp
-                    )
-                    Text(
-                        text = "${book.exemplaresDisponiveis}/${book.totalExemplares}",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Black,
-                        color = UniforPrimary
-                    )
-                }
-            }
-
+            // PÁGINAS label + count (only if available)
             if (book.paginas != null) {
-                Spacer(modifier = Modifier.width(16.dp))
-                VerticalDivider(modifier = Modifier.height(36.dp), color = UniforOutline.copy(alpha = 0.2f))
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column(horizontalAlignment = Alignment.Start) {
+                Column {
                     Text(
                         text = "PÁGINAS",
-                        fontSize = 9.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = UniforOutline,
-                        letterSpacing = 0.5.sp
+                        color = Color(0xFF424751),
+                        letterSpacing = 0.6.sp
                     )
                     Text(
                         text = book.paginas.toString(),
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Black,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
                         color = UniforPrimary
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun BookInfoSection(book: Book) {
-    val items = buildList {
-        add(Triple(Icons.Default.Category, "Categoria", book.categoria))
-        book.editora?.let { add(Triple(Icons.Default.Business, "Editora", it)) }
-        book.anoPublicacao?.let { add(Triple(Icons.Default.DateRange, "Publicação", it.toString())) }
-        book.idioma?.let { add(Triple(Icons.Default.Language, "Idioma", it)) }
-    }
-
-    if (items.isEmpty()) return
-
-    Text(
-        text = "Informações",
-        fontSize = 16.sp,
-        fontWeight = FontWeight.Bold,
-        color = UniforPrimary
-    )
-    Spacer(modifier = Modifier.height(10.dp))
-
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFF3F4F5),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            items.forEachIndexed { index, (icon, label, value) ->
-                BookInfoRow(icon = icon, label = label, value = value)
-                if (index < items.lastIndex) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        color = UniforOutline.copy(alpha = 0.1f)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun BookInfoRow(icon: ImageVector, label: String, value: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Icon(imageVector = icon, contentDescription = null, tint = UniforOutline, modifier = Modifier.size(16.dp))
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text = label, fontSize = 13.sp, color = UniforOutline, modifier = Modifier.width(80.dp))
-        Text(
-            text = value,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF222222),
-            modifier = Modifier.weight(1f)
-        )
     }
 }
 
 @Composable
 private fun RatingAnalysisSection(media: Double, total: Int, avaliacoes: List<Avaliacao>) {
-    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(32.dp)) {
         Text(
             text = "Análise de Leitura",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.ExtraBold,
             color = UniforPrimary
         )
-        Spacer(modifier = Modifier.height(16.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "%.1f".format(media),
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.Black,
-                    color = UniforPrimary
-                )
-                Text(
-                    text = "Média baseada em\n$total leitores",
-                    fontSize = 11.sp,
-                    color = UniforOutline,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 16.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.width(24.dp))
-
+        // Card: rounded-3xl = 24dp, p-8 = 32dp, gap-8 = 32dp
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = UniforSurfaceContainerLow,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                modifier = Modifier.padding(32.dp),
+                verticalArrangement = Arrangement.spacedBy(32.dp)
             ) {
-                val countsByStars = (5 downTo 1).map { star ->
-                    star to avaliacoes.count { it.nota == star }
-                }
-                countsByStars.forEach { (star, count) ->
-                    val fraction = if (total > 0) count.toFloat() / total else 0f
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
+                // Top row: big score left, verified badge right (items-end = bottom-aligned)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Column {
                         Text(
-                            text = "$star",
-                            fontSize = 11.sp,
-                            color = UniforOutline,
-                            modifier = Modifier.width(10.dp),
-                            textAlign = TextAlign.End
+                            text = "%.1f".format(media),
+                            fontSize = 60.sp,
+                            fontWeight = FontWeight.Black,
+                            color = UniforPrimary,
+                            lineHeight = 60.sp
                         )
-                        Icon(Icons.Default.Star, null, tint = UniforTertiaryFixed, modifier = Modifier.size(11.dp))
-                        LinearProgressIndicator(
-                            progress = { fraction },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(50.dp)),
-                            color = UniforTertiaryFixed,
-                            trackColor = UniforOutline.copy(alpha = 0.15f)
+                        Text(
+                            text = "Média baseada em $total leitores",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF424751)
                         )
+                    }
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = UniforTertiaryFixed,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                // Rating bars: 5, 4, 3, 2 (gap-3 = 12dp, gap-4 = 16dp inside row)
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    listOf(5, 4, 3, 2).forEach { star ->
+                        val count = avaliacoes.count { it.nota == star }
+                        val fraction = if (total > 0) count.toFloat() / total else 0f
+                        val percentage = (fraction * 100).toInt()
+                        val barColor = when (star) {
+                            5, 4 -> UniforSecondary       // #006D35 green
+                            3 -> UniforTertiaryFixed       // #FEBB2B yellow
+                            else -> UniforErrorContainer   // #FFDAD6 light pink
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Text(
+                                text = "$star",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF191C1D),
+                                modifier = Modifier.width(16.dp)
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(12.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(Color.White)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .fillMaxWidth(fraction)
+                                        .background(barColor)
+                                )
+                            }
+                            Text(
+                                text = "$percentage%",
+                                fontSize = 12.sp,
+                                color = Color(0xFF424751),
+                                modifier = Modifier.width(32.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -508,33 +478,46 @@ private fun RatingAnalysisSection(media: Double, total: Int, avaliacoes: List<Av
 private fun CommentsSection(
     avaliacoes: List<Avaliacao>,
     total: Int,
-    onReportComment: (String) -> Unit
+    onReportComment: (String) -> Unit,
+    onLoadMore: () -> Unit
 ) {
-    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(32.dp)) {
         Text(
             text = "Comentários da Comunidade",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.ExtraBold,
             color = UniforPrimary
         )
-        Spacer(modifier = Modifier.height(16.dp))
 
-        avaliacoes.filter { !it.comentario.isNullOrBlank() }.forEach { avaliacao ->
-            CommentCard(avaliacao = avaliacao, onReport = { onReportComment(avaliacao.id) })
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        if (total > avaliacoes.size) {
-            Spacer(modifier = Modifier.height(4.dp))
-            TextButton(
-                onClick = { },
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            ) {
-                Text(
-                    "Ver mais ${total - avaliacoes.size} comentários",
-                    color = UniforPrimary,
-                    fontWeight = FontWeight.Bold
+        Column(verticalArrangement = Arrangement.spacedBy(32.dp)) {
+            avaliacoes.filter { !it.comentario.isNullOrBlank() }.forEach { avaliacao ->
+                CommentCard(
+                    avaliacao = avaliacao,
+                    onReport = { onReportComment(avaliacao.id) }
                 )
+            }
+
+            if (total > avaliacoes.size) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // "Ver mais" pill button: rounded-xl = 12dp, py-3 px-8 = 12dp 32dp
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = UniforSurfaceContainerHigh,
+                        onClick = onLoadMore
+                    ) {
+                        Text(
+                            text = "Ver mais ${total - avaliacoes.size} comentários",
+                            modifier = Modifier.padding(vertical = 12.dp, horizontal = 32.dp),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = UniforPrimary,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
             }
         }
     }
@@ -542,95 +525,148 @@ private fun CommentsSection(
 
 @Composable
 private fun CommentCard(avaliacao: Avaliacao, onReport: () -> Unit) {
+    var liked by remember { mutableStateOf(false) }
+    var likeCount by remember { mutableIntStateOf(0) }
+
+    // rounded-3xl = 24dp, p-8 = 32dp, gap-6 = 24dp
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFF3F4F5),
+        shape = RoundedCornerShape(24.dp),
+        color = Color.White,
+        shadowElevation = 2.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier.padding(32.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            // Header: [avatar + name/stars/date] justify-between + flag icon
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
-                val nome = avaliacao.usuario?.nome ?: "U"
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(UniforPrimary.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = nome.firstOrNull()?.uppercase() ?: "U",
-                        fontWeight = FontWeight.Bold,
-                        color = UniforPrimary,
-                        fontSize = 16.sp
-                    )
-                }
+                    // Avatar circle (46dp, #EDEEEF bg)
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFEDEEEF)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val nome = avaliacao.usuario?.nome ?: "U"
+                        Text(
+                            text = nome.firstOrNull()?.uppercase() ?: "U",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = UniforPrimary
+                        )
+                    }
 
-                Spacer(modifier = Modifier.width(10.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = nome, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = UniforPrimary)
-                    val perfil = avaliacao.usuario?.perfil
-                    if (!perfil.isNullOrBlank()) {
-                        Surface(
-                            color = UniforPrimary.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
+                    // Name + 5 stars (12dp) + date (gap-[3px] = 3dp)
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(
+                            text = avaliacao.usuario?.nome ?: "Usuário",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = UniforPrimary
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            repeat(avaliacao.nota.coerceIn(0, 5)) {
+                                Icon(Icons.Default.Star, null, tint = UniforTertiaryFixed, modifier = Modifier.size(12.dp))
+                            }
+                            repeat((5 - avaliacao.nota).coerceAtLeast(0)) {
+                                Icon(Icons.Default.StarBorder, null, tint = UniforTertiaryFixed, modifier = Modifier.size(12.dp))
+                            }
+                        }
+                        if (avaliacao.criadoEm.isNotBlank()) {
                             Text(
-                                text = perfil,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = UniforPrimary,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                text = "• ${formatRelativeDate(avaliacao.criadoEm)}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF424751)
                             )
                         }
                     }
                 }
 
+                // Flag/report icon (24dp, #00346F, p-[5px] = 5dp padding)
                 Icon(
                     Icons.Default.Flag,
                     contentDescription = "Reportar",
-                    tint = UniforOutline.copy(alpha = 0.5f),
+                    tint = UniforPrimary,
                     modifier = Modifier
-                        .size(18.dp)
+                        .size(24.dp)
+                        .padding(5.dp)
                         .clickable { onReport() }
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                repeat(avaliacao.nota.coerceIn(0, 5)) {
-                    Icon(Icons.Default.Star, null, tint = UniforTertiaryFixed, modifier = Modifier.size(14.dp))
-                }
-                repeat((5 - avaliacao.nota).coerceAtLeast(0)) {
-                    Icon(Icons.Default.StarBorder, null, tint = UniforTertiaryFixed, modifier = Modifier.size(14.dp))
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+            // Comment text: text-base = 16sp, leading-[26px]
             Text(
                 text = avaliacao.comentario ?: "",
-                fontSize = 14.sp,
-                color = Color(0xFF444444),
-                lineHeight = 20.sp,
+                fontSize = 16.sp,
+                color = Color(0xFF424751),
+                lineHeight = 26.sp,
                 maxLines = 5,
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            OutlinedButton(
-                onClick = onReport,
-                shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                border = ButtonDefaults.outlinedButtonBorder,
-                modifier = Modifier.height(32.dp)
+            // Action row: like button + "Responder" (gap-4 = 16dp)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Reportar", fontSize = 12.sp, color = UniforOutline, fontWeight = FontWeight.Medium)
+                // Like button: 75dp x 36dp, rounded-lg = 8dp
+                // Unliked: outlined border #B4B4B4, white bg
+                // Liked: #8AFAA7 bg, no border
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (liked) UniforSecondaryContainer else Color.White,
+                    border = if (!liked) BorderStroke(1.dp, Color(0xFFB4B4B4)) else null,
+                    onClick = {
+                        liked = !liked
+                        likeCount += if (liked) 1 else -1
+                    },
+                    modifier = Modifier
+                        .width(75.dp)
+                        .height(36.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.ThumbUp,
+                            contentDescription = null,
+                            tint = if (liked) UniforOnSecondaryContainer else Color(0xFFADADAD),
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Text(
+                            text = "$likeCount",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (liked) UniforOnSecondaryContainer else Color(0xFF444751)
+                        )
+                    }
+                }
+
+                // "Responder" text-only button
+                TextButton(
+                    onClick = { },
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text(
+                        text = "Responder",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF424751)
+                    )
+                }
             }
         }
     }
@@ -639,26 +675,63 @@ private fun CommentCard(avaliacao: Avaliacao, onReport: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BookDetailTopBar(onBack: () -> Unit, onNavigateToProfile: () -> Unit) {
+    // h-[72px] ≈ 72dp, bg white/80%, shadow
     TopAppBar(
-        title = { Text("Unifor Books", fontWeight = FontWeight.Black, color = UniforPrimary) },
+        title = {
+            Text(
+                "Unifor Books",
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 20.sp,
+                color = UniforPrimary
+            )
+        },
         navigationIcon = {
-            IconButton(onClick = onBack) {
+            Box(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onBack() }
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar", tint = UniforPrimary)
             }
         },
         actions = {
+            // Avatar: 45dp circle, #EDEEEF bg
             Box(
-                Modifier
-                    .padding(end = 16.dp)
-                    .size(40.dp)
+                modifier = Modifier
+                    .padding(end = 12.dp)
+                    .size(45.dp)
                     .clip(CircleShape)
-                    .background(UniforSurfaceContainerHigh)
+                    .background(Color(0xFFEDEEEF))
                     .clickable { onNavigateToProfile() },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Person, null, tint = UniforPrimary)
+                Icon(Icons.Default.Person, null, tint = UniforPrimary, modifier = Modifier.size(28.dp))
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = UniforBackground)
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.White.copy(alpha = 0.8f)
+        ),
+        modifier = Modifier.shadow(elevation = 4.dp)
     )
+}
+
+private fun formatRelativeDate(isoDate: String): String {
+    if (isoDate.isBlank()) return ""
+    return try {
+        val instant = java.time.Instant.parse(isoDate)
+        val diffSeconds = java.time.Duration.between(instant, java.time.Instant.now()).seconds
+        when {
+            diffSeconds < 60       -> "Agora"
+            diffSeconds < 3600     -> "Há ${diffSeconds / 60} min"
+            diffSeconds < 86400    -> "Há ${diffSeconds / 3600}h"
+            diffSeconds < 2592000  -> "Há ${diffSeconds / 86400} dias"
+            diffSeconds < 31536000 -> "Há ${diffSeconds / 2592000} meses"
+            else                   -> "Há ${diffSeconds / 31536000} anos"
+        }
+    } catch (_: Exception) {
+        isoDate.take(10)
+    }
 }

@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.unifor.booksapp.ui.theme.*
@@ -30,22 +31,14 @@ import com.unifor.booksapp.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoanQueueScreen(
-    queuePosition: Int? = 3,
+    queuePosition: Int? = null,
+    bookTitle: String = "",
+    bookAuthor: String = "",
     onBack: () -> Unit = {},
     onViewLoans: () -> Unit = {}
 ) {
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Unifor Books", fontWeight = FontWeight.Black, color = UniforPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar", tint = UniforPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = UniforBackground)
-            )
-        },
+        topBar = { LoanStatusTopBar(onBack = onBack) },
         containerColor = UniforBackground
     ) { padding ->
         Column(
@@ -58,7 +51,6 @@ fun LoanQueueScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Ícone de sucesso
             StatusIcon(
                 icon = Icons.Default.CheckCircle,
                 tint = UniforSuccess,
@@ -77,7 +69,7 @@ fun LoanQueueScreen(
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Infelizmente o livro está em empréstimo, entraremos em contato quando chegar na sua posição da fila",
+                text = "Infelizmente o livro está em empréstimo. Entraremos em contato quando chegar na sua posição da fila.",
                 fontSize = 15.sp,
                 color = UniforOutline,
                 textAlign = TextAlign.Center,
@@ -106,7 +98,7 @@ fun LoanQueueScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "${queuePosition ?: "N/A"}°",
+                        text = if (queuePosition != null) "${queuePosition}°" else "N/A",
                         fontSize = 40.sp,
                         fontWeight = FontWeight.Black,
                         color = UniforPrimary
@@ -116,12 +108,10 @@ fun LoanQueueScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Card: Info do livro
-            LoanBookInfoCard()
+            LoanBookInfoCard(bookTitle = bookTitle, bookAuthor = bookAuthor)
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Botão principal
             Button(
                 onClick = onViewLoans,
                 modifier = Modifier
@@ -132,7 +122,11 @@ fun LoanQueueScreen(
             ) {
                 Text("Ver Meus Empréstimos", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 Spacer(modifier = Modifier.width(8.dp))
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -147,21 +141,14 @@ fun LoanQueueScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoanApprovedScreen(
+    pickupDeadline: String? = null,
+    bookTitle: String = "",
+    bookAuthor: String = "",
     onViewLoans: () -> Unit = {},
     onBack: () -> Unit = {}
 ) {
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Unifor Books", fontWeight = FontWeight.Black, color = UniforPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar", tint = UniforPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = UniforBackground)
-            )
-        },
+        topBar = { LoanStatusTopBar(onBack = onBack) },
         containerColor = UniforBackground
     ) { padding ->
         Column(
@@ -210,7 +197,12 @@ fun LoanApprovedScreen(
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = UniforOutline, modifier = Modifier.size(18.dp))
+                        Icon(
+                            Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            tint = UniforOutline,
+                            modifier = Modifier.size(18.dp)
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "DATA LIMITE PARA RETIRADA",
@@ -222,7 +214,7 @@ fun LoanApprovedScreen(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "24 de Outubro,\n2026",
+                        text = pickupDeadline ?: "A definir",
                         fontSize = 26.sp,
                         fontWeight = FontWeight.Black,
                         color = UniforPrimary,
@@ -237,7 +229,12 @@ fun LoanApprovedScreen(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Warning, contentDescription = null, tint = UniforError, modifier = Modifier.size(16.dp))
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = UniforError,
+                                modifier = Modifier.size(16.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Atenção: Após esta data, a reserva será cancelada automaticamente e o exemplar retornará ao acervo.",
@@ -252,8 +249,7 @@ fun LoanApprovedScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Card: Info do livro
-            LoanBookInfoCard()
+            LoanBookInfoCard(bookTitle = bookTitle, bookAuthor = bookAuthor)
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -267,7 +263,11 @@ fun LoanApprovedScreen(
             ) {
                 Text("Ver Meus Empréstimos", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 Spacer(modifier = Modifier.width(8.dp))
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -282,21 +282,13 @@ fun LoanApprovedScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoanUnavailableScreen(
+    bookTitle: String = "",
+    bookAuthor: String = "",
     onBack: () -> Unit = {},
     onJoinQueue: () -> Unit = {}
 ) {
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Unifor Books", fontWeight = FontWeight.Black, color = UniforPrimary) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar", tint = UniforPrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = UniforBackground)
-            )
-        },
+        topBar = { LoanStatusTopBar(onBack = onBack) },
         containerColor = UniforBackground
     ) { padding ->
         Column(
@@ -335,6 +327,11 @@ fun LoanUnavailableScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Card: Info do livro
+            LoanBookInfoCard(bookTitle = bookTitle, bookAuthor = bookAuthor)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Card: Status atual
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -344,7 +341,12 @@ fun LoanUnavailableScreen(
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Info, contentDescription = null, tint = UniforOutline, modifier = Modifier.size(18.dp))
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            tint = UniforOutline,
+                            modifier = Modifier.size(18.dp)
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Status Atual: Em uso",
@@ -387,14 +389,27 @@ fun LoanUnavailableScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Bookmarks, contentDescription = null, tint = UniforPrimary, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Entrar na fila de reserva",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = UniforPrimary
+                        Icon(
+                            Icons.Default.Bookmarks,
+                            contentDescription = null,
+                            tint = UniforPrimary,
+                            modifier = Modifier.size(20.dp)
                         )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Entrar na fila de reserva",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = UniforPrimary
+                            )
+                            Text(
+                                text = "Você será notificado quando o livro estiver disponível.",
+                                fontSize = 12.sp,
+                                color = UniforOutline,
+                                lineHeight = 16.sp
+                            )
+                        }
                     }
                 }
             }
@@ -406,9 +421,10 @@ fun LoanUnavailableScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = UniforPrimary)
             ) {
-                Text("Voltar", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = UniforPrimary)
+                Text("Voltar", fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -419,6 +435,20 @@ fun LoanUnavailableScreen(
 // ─────────────────────────────────────────────────────────────
 // COMPONENTES COMPARTILHADOS
 // ─────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LoanStatusTopBar(onBack: () -> Unit) {
+    TopAppBar(
+        title = { Text("Unifor Books", fontWeight = FontWeight.Black, color = UniforPrimary) },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = UniforPrimary)
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = UniforBackground)
+    )
+}
 
 @Composable
 private fun StatusIcon(
@@ -443,7 +473,10 @@ private fun StatusIcon(
 }
 
 @Composable
-private fun LoanBookInfoCard() {
+private fun LoanBookInfoCard(
+    bookTitle: String,
+    bookAuthor: String
+) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -461,22 +494,63 @@ private fun LoanBookInfoCard() {
                     .background(UniforPrimary.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.MenuBook, contentDescription = null, tint = UniforPrimary, modifier = Modifier.size(28.dp))
+                Icon(
+                    Icons.Default.MenuBook,
+                    contentDescription = null,
+                    tint = UniforPrimary,
+                    modifier = Modifier.size(28.dp)
+                )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(
-                    text = "Design for the Real World",
+                    text = bookTitle.ifBlank { "Título não disponível" },
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = UniforPrimary
                 )
-                Text(
-                    text = "Victor Papanek • 1971",
-                    fontSize = 12.sp,
-                    color = UniforOutline
-                )
+                if (bookAuthor.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = bookAuthor,
+                        fontSize = 12.sp,
+                        color = UniforOutline
+                    )
+                }
             }
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────────
+// PREVIEWS
+// ─────────────────────────────────────────────────────────────
+
+@Preview(showBackground = true)
+@Composable
+private fun LoanQueueScreenPreview() {
+    LoanQueueScreen(
+        queuePosition = 3,
+        bookTitle = "Design for the Real World",
+        bookAuthor = "Victor Papanek • 1971"
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun LoanApprovedScreenPreview() {
+    LoanApprovedScreen(
+        pickupDeadline = "24 de Outubro, 2026",
+        bookTitle = "Design for the Real World",
+        bookAuthor = "Victor Papanek • 1971"
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun LoanUnavailableScreenPreview() {
+    LoanUnavailableScreen(
+        bookTitle = "Design for the Real World",
+        bookAuthor = "Victor Papanek • 1971"
+    )
 }

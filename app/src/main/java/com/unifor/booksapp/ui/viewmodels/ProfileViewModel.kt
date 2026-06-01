@@ -53,9 +53,10 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     private fun fetchPerfilFromApi() {
         viewModelScope.launch {
             try {
-                val response = apiService.getMe()
+                val userId = sessionManager.getUserId() ?: return@launch
+                val response = apiService.getUserById(userId)
                 if (response.isSuccessful) {
-                    val usuario = response.body() ?: return@launch
+                    val usuario = response.body()?.user ?: return@launch
                     val criadoEm = usuario.criadoEm ?: return@launch
 
                     // Persiste na sessão para chamadas futuras

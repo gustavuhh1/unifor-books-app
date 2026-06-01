@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!--
+        Shape: house roof (24,3)→(44,20)→(4,20) with inner step walls (16,20)↔(32,20),
+        body walls x=16..32 from y=20..30, then wide arrow shoulders (4,30)↔(44,30)
+        converging to bottom tip (24,46).
+    -->
+    <path
+        android:fillColor="#2255CC"
+        android:pathData="M24,3 L44,20 L32,20 L32,30 L44,30 L24,46 L4,30 L16,30 L16,20 L4,20 Z"/>
+
+    <!-- Three downward-curving semicircle arcs (white), centered at (24,14) -->
+    <!-- Outer: r=12, from (12,14) to (36,14), bottom tip at (24,26) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M12,14 A12,12 0 0 1 36,14"/>
+    <!-- Middle: r=9, from (15,14) to (33,14), bottom tip at (24,23) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M15,14 A9,9 0 0 1 33,14"/>
+    <!-- Inner: r=6, from (18,14) to (30,14), bottom tip at (24,20) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M18,14 A6,6 0 0 1 30,14"/>
+</vector>
